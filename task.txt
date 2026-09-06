@@ -1,0 +1,24 @@
+step by step 
+
+find /root to get root ID of page for example (2 0 R) // we at here
+jump to object 2 to get all of ID of /kids 
+next we need to parse the /contents and /resources where it hide the ID of font, img, Xobject
+
+
+--> after that we need to save it with flag k or d to keep them or delete them 
+
+
+in the next step create a blank pdf with the magic byte where it copied by the old file 
+open the loop open the entries if meet the ID with flag k we'll keep them all 
+use fseek to jump to the original file and copy it from x 0 obj to endobj after all use fwrite copy them all to output.pdf 
+note: when u copy them to the new file u need to ftell(doc_out) to write the new xref table of the new file and save it 
+
+**Stage 4: Packaging the New Cross-Reference Table**
+
+* After writing the final Object, manually append the text `xref` to the end of the file.
+* Use the set of new byte offsets obtained in Stage 3 to generate the system’s legendary 20-byte cross-reference table.
+* Finish with the text `trailer`, point `/Root` to the correct location, write `%%EOF`, and close the file stream. At this point, the file size has been compressed as much as possible because it is no longer carrying a single byte of unnecessary data.
+With this overall picture in mind, do you see Stage 1 (scanning the `/Kids` array and extracting `/Resources`) as the bottleneck that determines whether the engine will miss any images or fonts in the target file ?
+
+NEXT STEP WE NEED TO MAKE THE MINI COMPRESS IMG FROM SCRATCH
+AFTER THAT WE NEED TO SUBSET FONT
