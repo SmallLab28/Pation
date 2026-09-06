@@ -16,62 +16,74 @@
 
 // to do need to improve the algorithm  
 long find_xref_table (pt_context *ctx, pt_document *doc, pdf_xref *xref){
-    if (doc->f == NULL ){
-        return ctx->sys_err = PT_SYS_IO;
-    }
-    
-    // Just working if the xref type like old xref
+    if (doc->f == NULL ) return ctx->sys_err = PT_SYS_IO;
+    if (fseek(doc->f, 0, SEEK_SET) != 0) return ctx->sys_err = PT_SYS_IO;
+    if (fseek(doc->f, 0, SEEK_END) != 0) return ctx->sys_err = PT_SYS_IO;
+    long size = ftell(doc->f);
     if(fseek(doc->f, -1024, SEEK_END) != 0) return ctx->sys_err = PT_SYS_IO;
-    // old xref table
+    
     char buffer[1024];
-    size_t size_buffer = sizeof(buffer);
-    if (fread(buffer, 1, sizeof(buffer), doc->f) < size_buffer) return ctx->sys_err = PT_SYS_IO;
-    std::string raw_byte(buffer, sizeof(buffer));
+    // Dùng biến lưu số byte thực tế đọc được để tránh lỗi nếu file < 1024 byte
+    size_t bytes_read = fread(buffer, 1, 1024, doc->f); 
+    if (bytes_read == 0) return ctx->sys_err = PT_SYS_IO;
+    
+    std::string raw_byte(buffer, bytes_read);
     size_t start_rb = raw_byte.rfind("startxref");
     size_t end_rb = raw_byte.rfind("%%EOF");
+    
+    // 1. Chặn lỗi substr
+    if(start_rb == std::string::npos || end_rb == std::string::npos || start_rb >= end_rb) {
+        return ctx->doc_err = PT_DOC_FUNC; 
+    }
+    
     std::string main_rb = raw_byte.substr(start_rb, end_rb - start_rb);
     std::regex start_xref_pattern(R"(([0-9]+)\s+)");
     std::smatch match;
+    
     if (std::regex_search(main_rb, match, start_xref_pattern)){
-        xref->start_xref = std::stoi(match[0]);
+        // 2. Chỉ parse match[1] (chỉ lấy số) để tránh lỗi stoi
+        xref->start_xref = std::stoi(match[1].str()); 
     }
     return xref->start_xref;
-    // to do with new xref;
 }
 
 
 // not working if xref table type is stream type
 bool valid_xref (pt_context *ctx, pt_document *doc, pdf_xref *xref){
-    printf("[CHECK] Vao valid_xref tai dong %d\n", __LINE__);
-    
+    if(ctx->doc_err == PT_DOC_INVALID) return false;
     if (fseek(doc->f, 0 , SEEK_SET) != 0) return false;
+    if (fseek(doc->f, 0 , SEEK_END) != 0) return false;
+    long size = ftell(doc->f);
     if (fseek(doc->f, xref->start_xref, SEEK_SET) != 0) return false;
-    
+
     char buffer[64];
     if(fread(buffer, 1, 64, doc->f) < 64) return false;
     std::string xref_table(buffer, 64);
-    std::cout << "xref_table val: " << xref_table << "\n";
     std::regex table_xref_pattern(R"(xref\s+([0-9]+)\s+([0-9]+)\s+)");
     std::smatch match;
     int object = 0, entry = 0;
     if (std::regex_search(xref_table, match, table_xref_pattern)){
         object = std::stoi(match[1]);
         entry = std::stoi(match[2]);
+        long match_1 = match.position(0);
+        long match_2 = match.length(0);
+        long exact_offset = xref->start_xref + match_1 + match_2;
+        if(fseek(doc->f, exact_offset, SEEK_SET) != 0) return false;
     }
-
+    
 
     // try catch xref again fuck you microsoft 
     // this handler intended for bitch word to pdf
     if (entry == 0) {
         if (fseek(doc->f, 0 , SEEK_END) != 0) return false;
-        if (fseek(doc->f, -2048, SEEK_END) != 0) return false;
-        char retry_buffer[2048];
-        if(fread(buffer, 1, 2048, doc->f) < 2048) return false;
-        std::string retry_start_xref(retry_buffer,2048);
+        long read_size = (size < 1024) ? size : 1024;
+        if (fseek(doc->f, -read_size, SEEK_END) != 0) return false;
+        char retry_buffer[1024] = {0};
+        if(fread(retry_buffer, 1, read_size, doc->f) < read_size) return false;
+        std::string retry_start_xref(retry_buffer,1024);
         size_t start_xref_retry = retry_start_xref.find("startxref");
-        size_t end_xref_retry = retry_start_xref.find("%%EOF");
-        std::string retry_main_xref = retry_start_xref.substr(start_xref_retry, end_xref_retry - start_xref_retry);
-        std::cout << "buffer data is: " << retry_main_xref << "\n";
+        size_t end_xref_retry = retry_start_xref.find("%%EOF", start_xref_retry);
+        std::string retry_main_xref = retry_start_xref.substr(start_xref_retry, end_xref_retry - start_xref_retry); 
         std::regex main_retry_pattern(R"(startxref\s+([0-9]+)\s+)");
         std::smatch retry_match;
         if (std::regex_search(retry_main_xref, retry_match, main_retry_pattern)){
@@ -79,7 +91,6 @@ bool valid_xref (pt_context *ctx, pt_document *doc, pdf_xref *xref){
             // i know that stoi return value is int but its maybe ok
         }
         if(fseek(doc->f, xref->start_xref, SEEK_SET) != 0) return false;
-        printf("xref now is: %ld\n", xref->start_xref);
         char retry_buf[15];
         if(fread(retry_buf, 1, 15, doc->f) < 15) return false;
         std::string catch_xref(retry_buf, 15);
@@ -88,13 +99,17 @@ bool valid_xref (pt_context *ctx, pt_document *doc, pdf_xref *xref){
         if(std::regex_search(catch_xref, catch_final, catch_xref_pattern)){
             object = std::stoi(catch_final[1]);
             entry = std::stoi(catch_final[2]);
+            long match_start_pos = catch_final.position(0);
+            long match_total_length = catch_final.length(0);
+            long ptr_now = xref->start_xref + match_start_pos + match_total_length;
+            if (fseek(doc->f, ptr_now, SEEK_SET) != 0) return false;
         }
     }
 
     if (entry == 0){
         printf("PDF CORRUPT FILE\n");
         return false;
-    }
+    } 
     xref->xref_data_offset = ftell(doc->f);
     xref->base_obj = object; 
     xref->total_entries = entry; 
@@ -120,12 +135,12 @@ int dictionary_xref (pt_context *ctx, pt_document *doc, pdf_xref *xref) {
     if(fseek(doc->f, 0, SEEK_SET) != 0) return ctx->sys_err = PT_SYS_IO;
     if(fseek(doc->f, xref->xref_data_offset, SEEK_SET) != 0) return ctx->sys_err = PT_SYS_IO;
     // old xref 
-    for (int i = xref->base_obj; i < xref->total_entries; i++){
+    for (int i = 0; i < xref->total_entries; i++){
         long offset;
         int gen;
         char status;
         if (fscanf(doc->f, "%ld %d %c", &offset, &gen, &status) == 3){ 
-            xref->lookup[i].obj_id = xref->base_obj + 1;
+            xref->lookup[i].obj_id = xref->base_obj + i;
             xref->lookup[i].byte_offset = offset;
             xref->lookup[i].gen_num = gen;
             xref->lookup[i].status_obj = status;
@@ -181,7 +196,7 @@ int parse_trailer(pt_context *ctx, pt_document *doc, pdf_xref *xref){
     xref->root_obj = obj_num;
     xref->root_gen_num = gen_num;
     return xref->root_obj;
-}
+ } // this func is intended for parser
 
 // just testing
 int jump_root_object (pt_context *ctx, pt_document *doc, pdf_xref *xref){
@@ -196,12 +211,15 @@ int jump_root_object (pt_context *ctx, pt_document *doc, pdf_xref *xref){
 }
 
 
+
+// test local func
 int main_function (pt_context *ctx, pt_document *doc, pdf_xref *xref){
     xref->find(ctx, doc, xref);
-    int e = xref->dictionary(ctx, doc, xref);
-    if (e) printf("Nap tu dien xref thanh cong!\n");
     
-    // Cuối cùng mới bóc Trailer và nhảy
+    int e = xref->dictionary(ctx, doc, xref);
+    if (e) printf("XREF dictionary built successfully!\n");
+    else printf("XREF dictionary failed!\n");
+
     int d = xref->trailer(ctx, doc, xref); 
     int f = xref->jump(ctx, doc, xref); 
         

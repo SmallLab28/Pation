@@ -13,6 +13,7 @@ long check_size (pt_context *ctx, pt_document *doc){
         return ctx->sys_err = PT_SYS_IO;
     }
     doc -> size = ftell(doc -> f);
+    if (doc->size < 1024) return ctx->doc_err = PT_DOC_INVALID;
     fseek(doc -> f, 0, SEEK_SET);
     return doc -> size;
 }
