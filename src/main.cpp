@@ -1,4 +1,4 @@
-﻿#include<iostream>
+#include<iostream>
 #include "pation/document.h"
 #include "pdf/xref.h"
 #include "pation/context.h"
@@ -6,26 +6,24 @@ using namespace std;
 
 int main () {
     pt_context *ctx = pt_ctx_create();
-#ifdef _WIN32
-    pt_document *doc = pt_open_doc(ctx,"C:\\Pation\\data\\a.pdf");
+    pt_state *st = pt_init_state();
+#ifdef __WIN32
+    st->doc->file_name = "C:\\pation\\data\\a.pdf";
 #elif __APPLE__
-    pt_document *doc = pt_open_doc(ctx,"../data/test.pdf");
+    st->doc->file_name = "../data/a.pdf";
 #else
-    pt_document *doc = pt_open_doc(ctx,"../data/test.pdf");
+    st->doc->file_name = "../data/a.pdf";
 #endif
-    pdf_xref *xref = init_pdf_xref(ctx, doc);
-    if (ctx == NULL || doc == NULL || xref == NULL){
-        doc -> close(doc);
-        xref -> close(xref);
-        ctx -> free(ctx);
-        return 0;
+    if( ctx == NULL || st == NULL){
+        ctx->message = "main.cpp __LINE__";
+        st  ->free(st);
+        ctx ->free(ctx);
     }
-    int a = xref->main(ctx,doc,xref) ? 1 : 0;
-    if (a == 1) printf("%d\n", a);
-    //int b = p
-    doc -> close(doc);
-    xref -> close(xref);
-    ctx -> free(ctx);
+    main_doc(ctx, st);
+    int a = st->xref->call(ctx, st);
+    std::cout << "SUCCESS" << "\n";
+    st  ->free(st);
+    ctx ->free(ctx); 
     return 0;
 }
 

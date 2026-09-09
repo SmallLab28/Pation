@@ -3,20 +3,22 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "pation/state.h"
+#include "pation/context.h"
 #include<stdint.h>
 #include<stdio.h>
 #include<stdbool.h>
-#include "pation/context.h"
+
   //struct pt_document
 typedef struct pt_document pt_document;
   
   // func pointer
-typedef void (close_fn) (pt_document *doc);
-typedef long (size_fn) (pt_context *ctx, pt_document *doc);
-typedef double (version_fn) (pt_context *ctx, pt_document *doc);
-typedef bool (is_valid_pdf_fn) (pt_context *ctx, pt_document *doc);
-  // Constructor
-pt_document *pt_open_doc(pt_context *ctx, const char *file);
+typedef long (size_fn) (pt_context *ctx, pt_state *st);
+typedef double (version_fn) (pt_context *ctx, pt_state *st);
+typedef bool (is_valid_pdf_fn) (pt_context *ctx, pt_state *st);
+typedef void (main_doc_fn) (pt_context *ctx, pt_state *st);
+void main_doc (pt_context *ctx, pt_state *st);
+
 
 
 struct pt_document {
@@ -24,9 +26,6 @@ struct pt_document {
     const char *file_name;
     long size;
     double version_pdf;
-    // func IO
-    close_fn *close;
-
     // func checking pdf
     size_fn *check_size;
     version_fn *check_version;
