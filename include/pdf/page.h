@@ -4,7 +4,7 @@
 #ifdef __cplusplus 
 extern "C"{
 #endif
-
+#include "pdf/xref.h"
 #include "pation/context.h"
 #include "pation/document.h"
 #include "pdf/xref.h"
@@ -15,16 +15,15 @@ extern "C"{
 typedef struct pdf_page pdf_page;
 
 
-// Constuctor
-pdf_page *page_init(pt_context *ctx, pt_document *doc);
+// main
+typedef void (main_parse_fn) (pt_context *ctx, pt_state);
 
-
-typedef int (jump_fn) (pt_context *ctx, pt_document *doc, pdf_xref *xref);
-typedef void (free_page_fn) (pdf_page);
+// func
+typedef int (scan_obj_fn) (pt_context *ctx, pt_state *st);
 
 struct pdf_page{
     int test;
-    jump_fn *jump;
+    main_parse_fn *main;
 };
 
 

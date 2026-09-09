@@ -13,7 +13,8 @@ add_executable(app
     src/pation/document.c
     src/pation/context.c
     src/pdf/xref.cpp
-    src/pation/state.c
+    src/pation/state.c 
+    src/pdf/page.cpp
   )
 
 target_include_directories(

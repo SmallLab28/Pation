@@ -8,11 +8,11 @@ int main () {
     pt_context *ctx = pt_ctx_create();
     pt_state *st = pt_init_state();
 #ifdef __WIN32
-    st->doc->file_name = "C:\\pation\\data\\a.pdf";
+    ctx->file->file_name = "C:\\pation\\data\\a.pdf";
 #elif __APPLE__
-    st->doc->file_name = "../data/a.pdf";
+    ctx->file->file_name = "../data/a.pdf";
 #else
-    st->doc->file_name = "../data/a.pdf";
+    ctx->file->file_name = "../data/a.pdf";
 #endif
     if( ctx == NULL || st == NULL){
         ctx->message = "main.cpp __LINE__";

@@ -8,6 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef struct pdf_page pdf_page;
 typedef struct pt_state pt_state;
 typedef struct pt_document pt_document;
 typedef struct pdf_xref pdf_xref;
@@ -17,13 +18,14 @@ pt_state *pt_init_state (void);
 typedef void (pt_drop_state) (pt_state *st);
 
 struct pt_state {
-     // struct function
-     pt_document *doc;
-     pdf_xref *xref;
+    // struct function
+    pt_document *doc;
+    pdf_xref *xref;
+    pdf_page *page;
 
 
-     // state life time
-     pt_drop_state *free;
+    // state life time
+    pt_drop_state *free;
 };
 
 
