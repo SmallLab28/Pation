@@ -41,19 +41,23 @@ pt_state *pt_init_state(pt_context *ctx){
     // doc
     st->doc = calloc(1, sizeof(*(st->doc)));
     if(st->doc == NULL){
+        drop_state(st);
         return NULL;
     }
     // xref
     st->xref  = calloc(1, sizeof(*(st->xref)));
     if (st->xref == NULL){
+        drop_state(st);
         return NULL;
     }
     st->page = calloc(1, sizeof(*(st->page)));
     if (st->page == NULL){
+        drop_state(st);
         return NULL;
     }
     st->parser = calloc(1, sizeof(*(st->parser)));
     if (st->parser == NULL){
+        drop_state(st);
         return NULL;
     }
     main_doc(ctx, st);
