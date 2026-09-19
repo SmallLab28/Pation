@@ -13,9 +13,6 @@ void drop_state (pt_state *st){
 
     // doc
     if (st->doc != NULL){
-        if(st->doc->f != NULL){
-            fclose(st->doc->f);            
-        }
         free(st->doc);
     }
     // xref

@@ -34,14 +34,14 @@ double version_of_pdf (pt_context *ctx, pt_state *st){
 bool is_valid_file(pt_context *ctx, pt_state *st) {
     ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_SET);
     char buffer[16];
-
+    char pattern_magic_byte[4] = {0};
     ctx->file->gets(ctx, buffer, 16, ctx->file->f);
 
-    ctx->file->seek(ctx, ctx->file->f, 0, SEEK_SET);
-    if (strncmp(buffer, "%PDF", 4) != 0) {
-        return false;
+    for (int i = 0; i < 4; i++){
+        if(buffer[i] != pattern_magic_byte[i]){
+            return false;
+        }
     }
-
     return true;
 }
 

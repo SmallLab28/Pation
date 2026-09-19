@@ -27,7 +27,7 @@ pt_state* pt_load_pdf(pt_context *ctx, const char *filepath) {
 int main () {
     pt_context *ctx = pt_ctx_create();
 #ifdef __WIN32
-    const char *filepath = "C:\\pation\\data\\a.pdf";
+    const char *filepath = "C:\\Pation\\data\\a.pdf";
 #else
     const char *filepath = "../data/a.pdf";
 #endif

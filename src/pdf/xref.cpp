@@ -10,38 +10,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <stdint.h>
 #include <iostream>
 #include <unordered_map>
 #include <regex>
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
 
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
 
-// to do need to improve the algorithm  
+// to do need to improve the algorithm (done)
+// remainning stream type
 long find_xref_table (pt_context *ctx, pt_state *st){
-    ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_SET); 
+    ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_SET);
     ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_END); 
-    long size = ctx->file->tell(ctx, ctx->file->f);
-    long read_size = (size < 1024) ? size : 1024;
-    if (ctx->file->seek(ctx, ctx->file->f, -read_size, PT_SEEK_END) != 0) return ctx->sys_err = PT_SYS_IO;
-    
-    char buffer[1024];
-    
-    size_t bytes_read = ctx->file->read(ctx, buffer, 1, read_size, ctx->file->f); 
-    if (bytes_read == 0) return ctx->sys_err = PT_SYS_IO;
-    
-    std::string raw_byte(buffer, bytes_read);
-    size_t start_rb = raw_byte.rfind("startxref");
-    size_t end_rb = raw_byte.rfind("%%EOF");
-    
-    if(start_rb == std::string::npos || end_rb == std::string::npos || start_rb >= end_rb) {
-        return ctx->doc_err = PT_DOC_FUNC; 
+    ctx->file->seek(ctx, ctx->file->f, -1024, PT_SEEK_END);
+    char buffer[1024] = {0};
+    uint64 byte_read = ctx->file->read(ctx, buffer, 1, 1024, ctx->file->f);
+    std::string f_xref(buffer, byte_read);
+    size_t f_prev_card = f_xref.find("/Prev");
+    if(f_xref == "/Prev"){
+        size_t prev_offset = f_xref.find("/Prev", f_prev_card);
+        std::regex prev_pattern(R"(/Prev\s+([0-9]+)\s+)");
+        std::smatch match_prev_pt;
+        if(std::regex_search(f_xref, match_prev_pt, prev_pattern)){
+            st->xref->start_xref = (long) std::stoi(match_prev_pt[1]);
+        }
     }
-    
-    std::string main_rb = raw_byte.substr(start_rb, end_rb - start_rb);
-    std::regex start_xref_pattern(R"(([0-9]+)\s+)");
-    std::smatch match;
-    
-    if (std::regex_search(main_rb, match, start_xref_pattern)){
-        st->xref->start_xref = std::stoi(match[1].str()); 
+    else {
+        size_t f_offset = f_xref.find("startxref");
+        std::regex offset_pattern(R"(startxref\s+([0-9]+)\s+)");
+        std::smatch match_offset;
+        if(std::regex_search(f_xref, match_offset, offset_pattern)){
+            st->xref->start_xref = (long) std::stoi(match_offset[1]);
+        }
     }
     return st->xref->start_xref;
 }
