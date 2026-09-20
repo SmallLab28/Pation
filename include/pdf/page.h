@@ -1,17 +1,14 @@
 #ifndef PAGE_H
 #define PAGE_H
 
-#ifdef __cplusplus 
-extern "C"{
-#endif
 #include "pation/state.h"
 #include "pdf/xref.h"
 #include "pation/context.h"
 #include "pation/document.h"
 #include "pdf/xref.h"
-#include "stdint.h"
-#include "stdbool.h"
-
+#include <stdint.h>
+#include <stdbool.h>
+#include <vector>
 //struct
 typedef struct pdf_page pdf_page;
 
@@ -21,17 +18,17 @@ typedef void (main_page_fn) (pt_context *ctx, pt_state *st);
 void main_page(pt_context *ctx, pt_state *st);
 
 // func
-typedef int (scan_obj_fn) (pt_context *ctx, pt_state *st);
+typedef int (page_root_fn) (pt_context *ctx, pt_state *st);
+
 
 struct pdf_page{
-    int test;
+    size_t page_num;
+    size_t kid_qty;
     //parse page
-    scan_obj_fn *scan;
+    std::vector<long> kid;
+    page_root_fn *page_root;
     main_page_fn *main;
 };
 
 
-#ifdef __cplusplus
-}
-#endif
 #endif 

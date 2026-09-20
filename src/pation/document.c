@@ -33,11 +33,11 @@ double version_of_pdf (pt_context *ctx, pt_state *st){
 
 bool is_valid_file(pt_context *ctx, pt_state *st) {
     ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_SET);
-    char buffer[16];
-    char pattern_magic_byte[4] = {0};
-    ctx->file->gets(ctx, buffer, 16, ctx->file->f);
-
-    for (int i = 0; i < 4; i++){
+    char buffer[4] = {0};
+    char pattern_magic_byte[] = "%PDF";
+    ctx->file->gets(ctx, buffer, 4, ctx->file->f);
+    size_t length = strlen(pattern_magic_byte);
+    for (int i = 0; i < length; i++){
         if(buffer[i] != pattern_magic_byte[i]){
             return false;
         }

@@ -1,9 +1,9 @@
-
 #include "pdf/xref.h"
 #include "pation/document.h"
 #include "pation/state.h"
 #include "pdf/parser.h"
 #include "pdf/page.h"
+#include <new>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,46 +13,45 @@ void drop_state (pt_state *st){
 
     // doc
     if (st->doc != NULL){
-        free(st->doc);
+        delete st->doc;
     }
     // xref
     if (st->xref != NULL){
-        free(st->xref->lookup);
-        free(st->xref);
+        delete st->xref;
     }
     if (st->page != NULL){
-        free(st->page);
+        delete st->page;
     }
     if (st->parser != NULL) {
-        free(st->parser);
+        delete st->parser;
     }
     free(st);
 }
 
 
 pt_state *pt_init_state(pt_context *ctx){
-    pt_state *st = (pt_state*)calloc(1, sizeof(*st));
+    pt_state *st = new (std::nothrow) pt_state{};
     if (st == NULL){
         return NULL;
     }
     // doc
-    st->doc = calloc(1, sizeof(*(st->doc)));
+    st->doc = new (std::nothrow) pt_document{};
     if(st->doc == NULL){
         drop_state(st);
         return NULL;
     }
     // xref
-    st->xref  = calloc(1, sizeof(*(st->xref)));
+    st->xref  = new (std::nothrow) pdf_xref{};
     if (st->xref == NULL){
         drop_state(st);
         return NULL;
     }
-    st->page = calloc(1, sizeof(*(st->page)));
+    st->page = new (std::nothrow) pdf_page{};
     if (st->page == NULL){
         drop_state(st);
         return NULL;
     }
-    st->parser = calloc(1, sizeof(*(st->parser)));
+    st->parser = new (std::nothrow) pdf_parser{};
     if (st->parser == NULL){
         drop_state(st);
         return NULL;

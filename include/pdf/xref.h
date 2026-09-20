@@ -1,10 +1,8 @@
 #ifndef XREF_H
 #define XREF_H
 
-#ifdef __cplusplus
-extern "C"{
-#endif
 
+#include <vector>
 #include "pation/state.h"
 #include <stdio.h>
 #include <stdbool.h>
@@ -52,7 +50,7 @@ struct pdf_xref{
     find_xref_fn *find;
     is_valid_xref_fn *is_valid_xref;
     dictionary_xref_fn *dictionary; 
-    dictionary_xref_lookup *lookup;
+    std::vector<dictionary_xref_lookup> lookup;
     lookup_offset_fn *look;
     parse_trailer_fn *trailer;
     jump_to_root_object_fn *jump;
@@ -60,7 +58,5 @@ struct pdf_xref{
 
 };
 
-#ifdef __cplusplus
-}
-#endif
+
 #endif

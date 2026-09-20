@@ -13,7 +13,7 @@ add_executable(app
     src/pation/document.c
     src/pation/context.c
     src/pdf/xref.cpp
-    src/pation/state.c 
+    src/pation/state.cpp 
     src/pdf/page.cpp
     src/pdf/parser.cpp
 )

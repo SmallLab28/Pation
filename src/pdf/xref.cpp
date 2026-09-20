@@ -8,6 +8,7 @@
 #include "pdf/xref.h"
 #include "pation/document.h"
 #include <stdio.h>
+#include <vector>
 #include <stdlib.h>
 #include <string>
 #include <stdint.h>
@@ -34,7 +35,7 @@ long find_xref_table (pt_context *ctx, pt_state *st){
     uint64 byte_read = ctx->file->read(ctx, buffer, 1, 1024, ctx->file->f);
     std::string f_xref(buffer, byte_read);
     size_t f_prev_card = f_xref.find("/Prev");
-    if(f_xref == "/Prev"){
+    if(f_prev_card != std::string::npos){
         size_t prev_offset = f_xref.find("/Prev", f_prev_card);
         std::regex prev_pattern(R"(/Prev\s+([0-9]+)\s+)");
         std::smatch match_prev_pt;
@@ -138,10 +139,11 @@ long lookup_offset (pt_context *ctx, pt_state *st, int target_obj){
 
 int dictionary_xref (pt_context *ctx, pt_state *st) {
     if (valid_xref(ctx, st) == false) return ctx->doc_err = PT_DOC_FUNC;
-    st->xref->lookup = (dictionary_xref_lookup*)malloc(st->xref->total_entries * sizeof(dictionary_xref_lookup));
-    if(st->xref->lookup == NULL) return ctx->sys_err = PT_SYS_MEM;
+
     ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_SET);
     ctx->file->seek(ctx, ctx->file->f, st->xref->xref_data_offset, PT_SEEK_SET);
+
+    st->xref->lookup.resize(st->xref->total_entries);
     // old xref 
     for (int i = 0; i < st->xref->total_entries; i++){
         long offset;
@@ -220,4 +222,3 @@ void main_xref (pt_state *st){
     st->xref->look = lookup_offset; 
     st->xref-> main = main_xref;
 }
-

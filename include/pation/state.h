@@ -1,9 +1,6 @@
 #ifndef STATE_H
 #define STATE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include "pation/context.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -29,8 +26,4 @@ struct pt_state {
     pt_drop_state *free;
 };
 
-
-#ifdef __cplusplus
-}
-#endif
 #endif

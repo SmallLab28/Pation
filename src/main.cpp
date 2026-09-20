@@ -27,14 +27,14 @@ pt_state* pt_load_pdf(pt_context *ctx, const char *filepath) {
 int main () {
     pt_context *ctx = pt_ctx_create();
 #ifdef __WIN32
-    const char *filepath = "C:\\Pation\\data\\a.pdf";
+    const char *filepath = "C:\\Pation\\data\\xobject.pdf";
 #else
     const char *filepath = "../data/a.pdf";
 #endif
     pt_state *st = pt_load_pdf(ctx, filepath);
     
     if (st && st->page) {
-        st->page->scan(ctx, st);
+        st->page->page_root(ctx, st);
     }
     if (st) st->free(st);
     ctx->free(ctx); 
