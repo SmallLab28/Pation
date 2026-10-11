@@ -24,6 +24,7 @@
 #include "../third-party/stb/stb_image_resize2.h"
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,6 +64,9 @@ static std::vector<uint8_t> read_obj_raw(pt_context *ctx, long offset, long end_
 static std::string resolve_image_colorspace(pt_context *ctx, pt_state *st,
                                             const std::string &dict_str);
 static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_id);
+static std::unordered_map<int, std::string> s_cs_cache;
+static std::unordered_map<int, std::vector<uint8_t>> s_pal_cache;
+static std::unordered_map<int, bool> s_devicen_cyk_cache;
 
 
 
@@ -543,27 +547,32 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             if (is_indexed) {
                 if (real_cs.find("Cyan") != std::string::npos && real_cs.find("Yellow") != std::string::npos) {
                     is_devicen_cyk = true;
-                } else {
-                    std::regex base_ref_pattern(R"(/Indexed\s+(\d+)\s+(\d+)\s+R)");
-                    std::smatch base_match;
-                    if (std::regex_search(real_cs, base_match, base_ref_pattern)) {
-                        int base_id = std::stoi(base_match[1].str());
-                        long base_offset = st->xref->look(ctx, st, base_id);
-                        if (base_offset > 0) {
-                            std::vector<uint8_t> base_raw = read_obj_raw(ctx, base_offset, base_offset + 2048);
-                            std::string base_str(base_raw.begin(), base_raw.end());
-                            if (base_str.find("/DeviceN") != std::string::npos &&
-                                base_str.find("Cyan") != std::string::npos &&
-                                base_str.find("Yellow") != std::string::npos) {
-                                is_devicen_cyk = true;
+                } else if (cs_id > 0) {
+                    auto it = s_devicen_cyk_cache.find(cs_id);
+                    if (it != s_devicen_cyk_cache.end()) {
+                        is_devicen_cyk = it->second;
+                    } else {
+                        std::regex base_ref_pattern(R"(/Indexed\s+(\d+)\s+(\d+)\s+R)");
+                        std::smatch base_match;
+                        if (std::regex_search(real_cs, base_match, base_ref_pattern)) {
+                            int base_id = std::stoi(base_match[1].str());
+                            long base_offset = st->xref->look(ctx, st, base_id);
+                            if (base_offset > 0) {
+                                std::vector<uint8_t> base_raw = read_obj_raw(ctx, base_offset, base_offset + 2048);
+                                std::string base_str(base_raw.begin(), base_raw.end());
+                                if (base_str.find("/DeviceN") != std::string::npos &&
+                                    base_str.find("Cyan") != std::string::npos &&
+                                    base_str.find("Yellow") != std::string::npos) {
+                                    is_devicen_cyk = true;
+                                }
                             }
                         }
+                        s_devicen_cyk_cache[cs_id] = is_devicen_cyk;
                     }
                 }
             }
             bool indexed_or_special = real_cs.find("/Separation") != std::string::npos ||
-                                      (real_cs.find("/DeviceN") != std::string::npos && !is_devicen_cyk) ||
-                                      (is_indexed && real_cs.find("/DeviceRGB") == std::string::npos && !is_devicen_cyk);
+                                      (real_cs.find("/DeviceN") != std::string::npos && !is_devicen_cyk);
             bool is_cmyk = (real_cs.find("/DeviceCMYK") != std::string::npos);
             // Aggressive mode: force ordinary DCT/Flate images through the
             // codec; retain only masks/special indexed images for fidelity.
@@ -645,31 +654,46 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                     if (decoded.pixels && decoded.width > 0 && decoded.height > 0) {
                         if (is_indexed && cs_id > 0) {
                             std::vector<uint8_t> pal = parse_palette(ctx, st, cs_id);
-                            if (!pal.empty()) {
-                                std::vector<uint8_t> rgb_pal;
-                                size_t num_colors = pal.size() / 3;
-                                if (is_devicen_cyk) {
-                                    rgb_pal.resize(num_colors * 3);
-                                    for (size_t c_idx = 0; c_idx < num_colors; c_idx++) {
-                                        float c = pal[c_idx * 3 + 0] / 255.0f;
-                                        float y = pal[c_idx * 3 + 1] / 255.0f;
-                                        float k = pal[c_idx * 3 + 2] / 255.0f;
-                                        // Calibrated pigment cross-talk model for DeviceN(Cyan, Yellow, Black):
-                                        // Real inks absorb green light when layered, preventing neon oversaturation.
-                                        float r = (1.0f - c) * (1.0f - k) + (0.24f * y) * (1.0f - k);
-                                        float g = (1.0f - k) * (1.0f - 0.12f * c - 0.11f * y);
-                                        float b = (1.0f - y) * (1.0f - k) + (0.55f * c) * (1.0f - k);
-                                        if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
-                                        if (g < 0.0f) g = 0.0f; if (g > 1.0f) g = 1.0f;
-                                        if (b < 0.0f) b = 0.0f; if (b > 1.0f) b = 1.0f;
-                                        rgb_pal[c_idx * 3 + 0] = (uint8_t)(r * 255.0f + 0.5f);
-                                        rgb_pal[c_idx * 3 + 1] = (uint8_t)(g * 255.0f + 0.5f);
-                                        rgb_pal[c_idx * 3 + 2] = (uint8_t)(b * 255.0f + 0.5f);
-                                    }
+                            if (pal.empty()) {
+                                pt_img_free(&decoded);
+                                skip_image = true;
+                                goto raw_fallback;
+                            }
+                            std::vector<uint8_t> rgb_pal;
+                            size_t num_colors = pal.size() / 3;
+                            if (is_devicen_cyk && pal.size() >= 3) {
+                                rgb_pal.resize(num_colors * 3);
+                                for (size_t c_idx = 0; c_idx < num_colors; c_idx++) {
+                                    float c = pal[c_idx * 3 + 0] / 255.0f;
+                                    float y = pal[c_idx * 3 + 1] / 255.0f;
+                                    float k = pal[c_idx * 3 + 2] / 255.0f;
+                                    // Calibrated pigment cross-talk model for DeviceN(Cyan, Yellow, Black):
+                                    // Real inks absorb green light when layered, preventing neon oversaturation.
+                                    float r = (1.0f - c) * (1.0f - k) + (0.24f * y) * (1.0f - k);
+                                    float g = (1.0f - k) * (1.0f - 0.12f * c - 0.11f * y);
+                                    float b = (1.0f - y) * (1.0f - k) + (0.55f * c) * (1.0f - k);
+                                    if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
+                                    if (g < 0.0f) g = 0.0f; if (g > 1.0f) g = 1.0f;
+                                    if (b < 0.0f) b = 0.0f; if (b > 1.0f) b = 1.0f;
+                                    rgb_pal[c_idx * 3 + 0] = (uint8_t)(r * 255.0f + 0.5f);
+                                    rgb_pal[c_idx * 3 + 1] = (uint8_t)(g * 255.0f + 0.5f);
+                                    rgb_pal[c_idx * 3 + 2] = (uint8_t)(b * 255.0f + 0.5f);
                                 }
-                                const uint8_t *use_pal = is_devicen_cyk ? rgb_pal.data() : pal.data();
-                                size_t pal_size = is_devicen_cyk ? rgb_pal.size() : pal.size();
+                            }
+                            const uint8_t *use_pal = (is_devicen_cyk && pal.size() >= 3) ? rgb_pal.data() : pal.data();
+                            size_t pal_size = (is_devicen_cyk && pal.size() >= 3) ? rgb_pal.size() : pal.size();
 
+                            if (pal_size < 768 && pal_size >= 256) {
+                                uint8_t *gray = (uint8_t*)malloc((size_t)decoded.width * decoded.height);
+                                for (long i = 0; i < (long)decoded.width * decoded.height; i++) {
+                                    uint8_t idx = decoded.pixels[i];
+                                    gray[i] = (idx < pal_size) ? use_pal[idx] : idx;
+                                }
+                                free(decoded.pixels);
+                                decoded.pixels = gray;
+                                decoded.components = 1;
+                                decoded.cs = PT_CS_GRAY;
+                            } else {
                                 uint8_t *rgb = (uint8_t*)malloc((size_t)decoded.width * decoded.height * 3);
                                 for (long i = 0; i < (long)decoded.width * decoded.height; i++) {
                                     uint8_t idx = decoded.pixels[i];
@@ -685,8 +709,6 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                                 decoded.pixels = rgb;
                                 decoded.components = 3;
                                 decoded.cs = PT_CS_RGB;
-                                std::regex cs_replace(R"(/ColorSpace\s+\d+\s+\d+\s+R)");
-                                dict_str = std::regex_replace(dict_str, cs_replace, "/ColorSpace /DeviceRGB");
                             }
                         }
                         
@@ -701,23 +723,6 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 } else if (!was_flate) {
                     raw_pixels.assign(stream_data, stream_data + stream_len);
                 }
-            }
-
-            
-            bool is_line_art = false;
-            if (!raw_pixels.empty() && img_channels == 1) {
-                long non_bw = 0;
-                long total = raw_pixels.size();
-                for (long i = 0; i < total; i++) {
-                    uint8_t v = raw_pixels[i];
-                    if (v > 15 && v < 240) non_bw++;
-                }
-                if (total > 0 && non_bw < total / 50) { // less than 2% gray pixels
-                    is_line_art = true;
-                }
-            }
-            if (is_line_art) {
-                skip_image = true;
             }
 
             bool is_grayscale = true;
@@ -744,65 +749,40 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 img_channels = 1;
             }
 
-
             std::vector<uint8_t> out_jpeg;
             std::vector<uint8_t> out_flate;
             long new_w = w, new_h = h;
-            bool is_binarized = false;
             
             if (!skip_image && !raw_pixels.empty()) {
                 int target_dpi = (st->writer && st->writer->target_dpi > 0) ? st->writer->target_dpi : 150;
-                if (target_dpi < 150) target_dpi = 150; 
+                if (target_dpi < 50) target_dpi = 50; 
 
-                int target_max_dim = (target_dpi <= 150) ? 1000 : 1500;
+                // Standard column/screen dimension:
+                // At 72 DPI: ~500px; at 150 DPI: ~1050px.
+                int target_max_dim = (int)(target_dpi * 7.0);
+                if (target_max_dim < 400) target_max_dim = 400;
                 int max_dim = std::max(w, h);
                 double scale = (max_dim > target_max_dim) ? (double)target_max_dim / max_dim : 1.0;
                 
-                if (scale < 1.0 && (was_dct || is_devicen_cyk)) {
+                if (scale < 1.0 && (was_dct || was_flate || is_devicen_cyk)) {
                     new_w = (long)(w * scale);
                     new_h = (long)(h * scale);
                 }
             
-            if (new_w < 16) new_w = std::min((long)w, 16L);
-            if (new_h < 16) new_h = std::min((long)h, 16L);
+                if (new_w < 16) new_w = std::min((long)w, 16L);
+                if (new_h < 16) new_h = std::min((long)h, 16L);
 
-            stbir_pixel_layout resize_layout = (img_channels == 1) ? STBIR_1CHANNEL :
-                                               (img_channels == 3) ? STBIR_RGB :
-                                               (img_channels == 4) ? STBIR_4CHANNEL : STBIR_1CHANNEL;
+                stbir_pixel_layout resize_layout = (img_channels == 1) ? STBIR_1CHANNEL :
+                                                   (img_channels == 3) ? STBIR_RGB :
+                                                   (img_channels == 4) ? STBIR_4CHANNEL : STBIR_1CHANNEL;
 
-            std::vector<uint8_t> binarized_pixels;
-            if (is_line_art && img_channels == 1 && !raw_pixels.empty()) {
-                size_t row_bytes = (new_w + 7) / 8;
-                binarized_pixels.resize(row_bytes * new_h, 0);
-                
-                std::vector<uint8_t> temp_scaled;
-                uint8_t* src_pixels = raw_pixels.data();
-                if (scale < 1.0 && was_dct) {
-                    temp_scaled.resize(new_w * new_h * img_channels);
-                    stbir_resize_uint8_linear(raw_pixels.data(), (int)w, (int)h, 0, temp_scaled.data(), (int)new_w, (int)new_h, 0, resize_layout);
-                    src_pixels = temp_scaled.data();
+                std::vector<uint8_t> scaled_pixels;
+                if (new_w != w || new_h != h) {
+                    scaled_pixels.resize(new_w * new_h * img_channels);
+                    stbir_resize_uint8_linear(raw_pixels.data(), (int)w, (int)h, 0, scaled_pixels.data(), (int)new_w, (int)new_h, 0, resize_layout);
+                } else {
+                    scaled_pixels = raw_pixels;
                 }
-
-                for (long y = 0; y < new_h; y++) {
-                    for (long x = 0; x < new_w; x++) {
-                        uint8_t v = src_pixels[y * new_w + x];
-                        if (v > 127) {
-                            binarized_pixels[y * row_bytes + x / 8] |= (1 << (7 - (x % 8)));
-                        }
-                    }
-                }
-                is_binarized = true;
-            }
-
-            std::vector<uint8_t> scaled_pixels;
-            if (!is_binarized && (new_w != w || new_h != h)) {
-                scaled_pixels.resize(new_w * new_h * img_channels);
-                stbir_resize_uint8_linear(raw_pixels.data(), (int)w, (int)h, 0, scaled_pixels.data(), (int)new_w, (int)new_h, 0, resize_layout);
-            } else if (!is_binarized) {
-                scaled_pixels = raw_pixels;
-            } else {
-                scaled_pixels = binarized_pixels;
-            }
 
                 pt_image image = {};
                 image.pixels = scaled_pixels.data();
@@ -814,23 +794,11 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                            
                 int target_quality = (st && st->writer && st->writer->target_quality > 0) ? st->writer->target_quality : 50;
                 if (target_quality < 10) target_quality = 10;
-                pt_compressed compressed = {nullptr, 0};
-                bool use_flate = is_binarized;
-                if (use_flate || is_binarized) {
-                    size_t raw_len = is_binarized ? ((size_t)image.width + 7) / 8 * image.height : (size_t)image.width * image.height * image.components;
-                    compressed = pt_flate_encode(image.pixels, raw_len);
-                    use_flate = true; // force flate for binarized
-                } else {
-                    compressed = pt_dct_encode(&image, target_quality);
-                }
+                pt_compressed compressed = pt_dct_encode(&image, target_quality);
 
                 if (compressed.data && compressed.size > 0) {
-                    if (use_flate) {
-                        out_flate.assign(compressed.data, compressed.data + compressed.size);
-                    } else {
-                        out_jpeg.assign(compressed.data, compressed.data + compressed.size);
-                        g_image_dct++;
-                    }
+                    out_jpeg.assign(compressed.data, compressed.data + compressed.size);
+                    g_image_dct++;
                 }
                 pt_compressed_free(&compressed);
             }
@@ -854,7 +822,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                         if (dd == std::string::npos) dd = new_dict.size();
                         
                         std::string filter = out_jpeg.empty() ? "/FlateDecode" : "/DCTDecode";
-                        std::string bpc_str = is_binarized ? "1" : "8";
+                        std::string bpc_str = "8";
                         std::string cspace = (img_channels == 1) ? "/DeviceGray" : (img_channels == 4 ? "/DeviceCMYK" : "/DeviceRGB");
                         
                         std::string extra = "\n/Filter " + filter + "\n/BitsPerComponent " + bpc_str + "\n/ColorSpace " + cspace + "\n/Width " + std::to_string(new_w) + "\n/Height " + std::to_string(new_h) + "\n/Length " + std::to_string(encoded_size);
@@ -886,6 +854,10 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
 
 int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
     if (!st->xref || st->xref->xref_store.empty()) return -1;
+
+    s_cs_cache.clear();
+    s_pal_cache.clear();
+    s_devicen_cyk_cache.clear();
 
     g_image_objects = 0;
     g_image_eligible = 0;
@@ -1181,6 +1153,10 @@ static void collect_tounicode_codepoints(const std::vector<uint8_t> &raw) {
 
 static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_id) {
     std::vector<uint8_t> pal;
+    if (cs_id <= 0) return pal;
+    auto it = s_pal_cache.find(cs_id);
+    if (it != s_pal_cache.end()) return it->second;
+
     long offset = st->xref->look(ctx, st, cs_id);
     if (offset <= 0) return pal;
     
@@ -1195,6 +1171,7 @@ static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_
     size_t idx = s.find("/Indexed");
     if (idx == std::string::npos) {
         ctx->file->seek(ctx, ctx->file->f, old_pos, PT_SEEK_SET);
+        s_pal_cache[cs_id] = pal;
         return pal;
     }
     
@@ -1285,6 +1262,7 @@ static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_
     }
     
     ctx->file->seek(ctx, ctx->file->f, old_pos, PT_SEEK_SET);
+    s_pal_cache[cs_id] = pal;
     return pal;
 }
 
@@ -1297,11 +1275,15 @@ static std::string resolve_image_colorspace(pt_context *ctx, pt_state *st,
     std::string sub = dict_str.substr(cs_pos, std::min(dict_str.size() - cs_pos, (size_t)100));
     if (!std::regex_search(sub, match, ref_pattern)) return {};
     int object_id = std::stoi(match[1].str());
+    auto it = s_cs_cache.find(object_id);
+    if (it != s_cs_cache.end()) return it->second;
+
     long offset = st->xref->look(ctx, st, object_id);
     if (offset <= 0) return {};
     std::vector<uint8_t> raw = read_obj_raw(ctx, offset, offset + 100000);
     std::string s(raw.begin(), raw.end());
     size_t end_pos = s.find("endobj");
     if (end_pos != std::string::npos) s = s.substr(0, end_pos);
+    s_cs_cache[object_id] = s;
     return s;
-}
+}

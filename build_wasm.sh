@@ -17,6 +17,3 @@ cp pation.wasm "$DIR/wrapper-wasm/"
 
 
 #wsl bash -c "cd /mnt/c/Users/ACER/Downloads/Pation && source emsdk/emsdk_env.sh && cd build_wasm_pation && make clean && cd .. && ./build_wasm.sh"
-
-#
-#

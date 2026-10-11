@@ -1,5 +1,5 @@
 /**
- * Pation PDF Compressor - WebAssembly Wrapper
+ * Pation PDF Compressor - WebAssembly Wrapper TypeScript Definitions
  */
 
 export interface CompressOptions {
@@ -11,16 +11,24 @@ export interface CompressOptions {
 
     /**
      * The target quality for re-encoding images.
-     * @default 20
+     * @default 25
      */
     quality?: number;
 }
 
 /**
- * Compresses a PDF file using Pation via WebAssembly.
  * 
- * @param pdfData - The raw bytes of the input PDF file (Uint8Array).
- * @param options - Configuration options for compression.
- * @returns A promise that resolves to the compressed PDF bytes.
  */
-export function compressPdf(pdfData: Uint8Array, options?: CompressOptions): Promise<Uint8Array>;
+export function getModule(): Promise<any>;
+
+/**
+ * 
+ * 
+ * @param fileData 
+ * @param optionsOrDpi 
+ * @returns 
+ */
+export function compressPdf(
+    fileData: Uint8Array | ArrayBuffer | Blob | File,
+    optionsOrDpi?: number | CompressOptions
+): Promise<Uint8Array>;
