@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/djpeg-static.dir/src/cdjpeg.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/cdjpeg.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/djpeg.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/djpeg.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/rdswitch.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/rdswitch.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/rdcolmap-12.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/rdcolmap-12.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/rdcolmap-8.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/rdcolmap-8.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrgif-12.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrgif-12.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrgif-8.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrgif-8.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-12.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-12.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-16.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-16.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-8.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrpng-8.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-12.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-12.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-16.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-16.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-8.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrapper/wrppm-8.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrbmp.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrbmp.c.obj.d"
+  "CMakeFiles/djpeg-static.dir/src/wrtarga.c.obj"
+  "CMakeFiles/djpeg-static.dir/src/wrtarga.c.obj.d"
+  "djpeg-static.exe"
+  "djpeg-static.exe.manifest"
+  "djpeg-static.pdb"
+  "libdjpeg-static.dll.a"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/djpeg-static.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

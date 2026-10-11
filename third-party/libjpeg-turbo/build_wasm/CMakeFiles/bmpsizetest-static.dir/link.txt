@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/bmpsizetest-static.dir/objects1.rsp -o bmpsizetest-static.js @CMakeFiles/bmpsizetest-static.dir/linkLibs.rsp

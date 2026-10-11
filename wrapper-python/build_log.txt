@@ -1,0 +1,500 @@
+running build_ext
+building 'pation' extension
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pation\context.c -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\context.o -O3 -std=c++17
+cc1.exe: warning: command-line option '-std=c++17' is valid for C++/ObjC++ but not for C
+../src\pation\context.c: In function 'scan_number':
+../src\pation\context.c:89:23: warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]
+   89 |     for (int i = 0; i < len; i++){
+      |                       ^
+../src\pation\context.c: In function 'scan_key_to_number':
+../src\pation\context.c:104:37: warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]
+  104 |     for (int i = (ptr - content); i < len; i++){
+      |                                     ^
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pation\document.c -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\document.o -O3 -std=c++17
+cc1.exe: warning: command-line option '-std=c++17' is valid for C++/ObjC++ but not for C
+../src\pation\document.c: In function 'is_valid_file':
+../src\pation\document.c:40:23: warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]
+   40 |     for (int i = 0; i < length; i++){
+      |                       ^
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pation\state.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\state.o -O3 -std=c++17
+In file included from ../include/pdf/xref.h:7,
+                 from ../src\pation\state.cpp:1:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\font.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\font.o -O3 -std=c++17
+../src\pdf\font.cpp: In function 'uint16_t cmap_lookup_f4(const uint8_t*, uint16_t, int)':
+../src\pdf\font.cpp:149:20: warning: unused variable 'glyph_ids' [-Wunused-variable]
+  149 |     const uint8_t *glyph_ids   = id_range_off + sc*2;
+      |                    ^~~~~~~~~
+../src\pdf\font.cpp: In function 'uint8_t* pt_font_subset(const pt_font*, const pt_glyph_set*, size_t*)':
+../src\pdf\font.cpp:481:28: warning: unused variable 'id_roff' [-Wunused-variable]
+  481 |             const uint8_t *id_roff    = id_delta + sc*2;
+      |                            ^~~~~~~
+../src\pdf\font.cpp:550:18: warning: unused variable 'actual' [-Wunused-variable]
+  550 |         uint32_t actual = 6; /* at minimum */
+      |                  ^~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\page.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\page.o -O3 -std=c++17
+../src\pdf\page.cpp: In function 'int page_root(pt_context*, pt_state*)':
+../src\pdf\page.cpp:50:16: warning: unused variable 'read' [-Wunused-variable]
+   50 |         size_t read = ctx->file->read(ctx, target, sizeof(char), 1, ctx->file->f);
+      |                ^~~~
+In file included from ../include/pdf/xref.h:7,
+                 from ../include/pdf/page.h:5,
+                 from ../src\pdf\page.cpp:3:
+../third-party/miniz/miniz.h: At global scope:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\parser.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\parser.o -O3 -std=c++17
+In file included from ../include/pdf/xref.h:7,
+                 from ../include/pdf/page.h:5,
+                 from ../src\pdf\parser.cpp:5:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\stream.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\stream.o -O3 -std=c++17
+In file included from ../include/pdf/stream.h:10,
+                 from ../src\pdf\stream.cpp:2:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\writer.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\writer.o -O3 -std=c++17
+../src\pdf\writer.cpp: In function 'FlatObj process_stream_obj(pt_context*, pt_state*, int, int, const std::vector<unsigned char>&)':
+../src\pdf\writer.cpp:415:14: warning: unused variable 'bpc' [-Wunused-variable]
+  415 |         long bpc = dict_int(dict_str, "/BitsPerComponent", 8);
+      |              ^~~
+../src\pdf\writer.cpp: In function 'int rewrite_pdf_impl(pt_context*, pt_state*, const char*)':
+../src\pdf\writer.cpp:740:24: warning: suggest parentheses around '&&' within '||' [-Wparentheses]
+  740 |         if (has_stream && s.find("/Subtype /Image") != std::string::npos || s.find("/Subtype/Image") != std::string::npos) {
+      |             ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../src\pdf\writer.cpp: At global scope:
+../src\pdf\writer.cpp:111:29: warning: 'std::vector<unsigned char> flate_compress(const uint8_t*, size_t)' defined but not used [-Wunused-function]
+  111 | static std::vector<uint8_t> flate_compress(const uint8_t *src, size_t src_len) {
+      |                             ^~~~~~~~~~~~~~
+In file included from ../include/pdf/xref.h:7,
+                 from ../src\pdf\writer.cpp:11:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../src\pdf\xref.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\xref.o -O3 -std=c++17
+../src\pdf\xref.cpp: In function 'int parse_xref_table(pt_context*, pt_state*)':
+../src\pdf\xref.cpp:105:14: warning: unused variable 'byte_read' [-Wunused-variable]
+  105 |         long byte_read = ctx->file->read(ctx, retry_buffer, 1, 1024, ctx->file->f);
+      |              ^~~~~~~~~
+../src\pdf\xref.cpp:79:10: warning: unused variable 'size' [-Wunused-variable]
+   79 |     long size = ctx->file->tell(ctx, ctx->file->f);
+      |          ^~~~
+../src\pdf\xref.cpp: In function 'std::vector<unsigned char> parse_xref_stream(pt_context*, pt_state*)':
+../src\pdf\xref.cpp:146:38: warning: format '%s' expects argument of type 'char*', but argument 2 has type 'std::vector<char>' [-Wformat=]
+  146 |     printf("DEBUG XREF BUFFER:\n%.200s\n", buffer);
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~
+      |           |                          |
+      |           std::vector<char>          char*
+../src\pdf\xref.cpp: In function 'int dictionary_xref(pt_context*, pt_state*)':
+../src\pdf\xref.cpp:256:26: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<dictionary_xref_lookup>::size_type' {aka 'long long unsigned int'} [-Wsign-compare]
+  256 |             if (new_size > st->xref->xref_store.size()) {
+      |                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../src\pdf\xref.cpp:311:26: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<dictionary_xref_lookup>::size_type' {aka 'long long unsigned int'} [-Wsign-compare]
+  311 |             if (new_size > st->xref->xref_store.size()) {
+      |                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../src\pdf\xref.cpp:322:34: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<unsigned char>::size_type' {aka 'long long unsigned int'} [-Wsign-compare]
+  322 |                 if (i + row_size > stream_xref_data.size()) break;
+      |                     ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/pdf/xref.h:7,
+                 from ../src\pdf\xref.cpp:8:
+../third-party/miniz/miniz.h: At global scope:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../third-party/img/lodepng.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\third-party\img\lodepng.o -O3 -std=c++17
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c ../third-party/miniz/miniz.c -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\third-party\miniz\miniz.o -O3 -std=c++17
+cc1.exe: warning: command-line option '-std=c++17' is valid for C++/ObjC++ but not for C
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -I../include -I../third-party -IC:\msys64\ucrt64/include/python3.14 -c wrapper-python.cpp -o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\wrapper-python.o -O3 -std=c++17
+In file included from ../include/pdf/xref.h:7,
+                 from ../include/pdf/page.h:5,
+                 from wrapper-python.cpp:7:
+../third-party/miniz/miniz.h:594:39: warning: 'const char* zError(int)' defined but not used [-Wunused-function]
+  594 |     static MZ_FORCEINLINE const char* zError(int err)
+      |                                       ^~~~~~
+../third-party/miniz/miniz.h:586:36: warning: 'mz_ulong adler32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  586 |     static MZ_FORCEINLINE mz_ulong adler32(mz_ulong adler, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~~~
+../third-party/miniz/miniz.h:581:36: warning: 'mz_ulong crc32(mz_ulong, const unsigned char*, size_t)' defined but not used [-Wunused-function]
+  581 |     static MZ_FORCEINLINE mz_ulong crc32(mz_ulong crc, const unsigned char *ptr, size_t buf_len)
+      |                                    ^~~~~
+../third-party/miniz/miniz.h:575:31: warning: 'int uncompress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong*)' defined but not used [-Wunused-function]
+  575 |     static MZ_FORCEINLINE int uncompress2(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong* pSource_len)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:570:31: warning: 'int uncompress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  570 |     static MZ_FORCEINLINE int uncompress(unsigned char* pDest, mz_ulong* pDest_len, const unsigned char* pSource, mz_ulong source_len)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:565:31: warning: 'int inflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  565 |     static MZ_FORCEINLINE int inflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:560:31: warning: 'int inflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  560 |     static MZ_FORCEINLINE int inflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:555:31: warning: 'int inflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  555 |     static MZ_FORCEINLINE int inflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:550:31: warning: 'int inflateInit2(mz_streamp, int)' defined but not used [-Wunused-function]
+  550 |     static MZ_FORCEINLINE int inflateInit2(mz_streamp pStream, int window_bits)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:545:31: warning: 'int inflateInit(mz_streamp)' defined but not used [-Wunused-function]
+  545 |     static MZ_FORCEINLINE int inflateInit(mz_streamp pStream)
+      |                               ^~~~~~~~~~~
+../third-party/miniz/miniz.h:537:36: warning: 'mz_ulong compressBound(mz_ulong)' defined but not used [-Wunused-function]
+  537 |     static MZ_FORCEINLINE mz_ulong compressBound(mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~~
+../third-party/miniz/miniz.h:533:31: warning: 'int compress2(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong, int)' defined but not used [-Wunused-function]
+  533 |     static MZ_FORCEINLINE int compress2(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len, int level)
+      |                               ^~~~~~~~~
+../third-party/miniz/miniz.h:529:31: warning: 'int compress(unsigned char*, mz_ulong*, const unsigned char*, mz_ulong)' defined but not used [-Wunused-function]
+  529 |     static MZ_FORCEINLINE int compress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
+      |                               ^~~~~~~~
+../third-party/miniz/miniz.h:525:36: warning: 'mz_ulong deflateBound(mz_streamp, mz_ulong)' defined but not used [-Wunused-function]
+  525 |     static MZ_FORCEINLINE mz_ulong deflateBound(mz_streamp pStream, mz_ulong source_len)
+      |                                    ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:521:31: warning: 'int deflateEnd(mz_streamp)' defined but not used [-Wunused-function]
+  521 |     static MZ_FORCEINLINE int deflateEnd(mz_streamp pStream)
+      |                               ^~~~~~~~~~
+../third-party/miniz/miniz.h:517:31: warning: 'int deflate(mz_streamp, int)' defined but not used [-Wunused-function]
+  517 |     static MZ_FORCEINLINE int deflate(mz_streamp pStream, int flush)
+      |                               ^~~~~~~
+../third-party/miniz/miniz.h:513:31: warning: 'int deflateReset(mz_streamp)' defined but not used [-Wunused-function]
+  513 |     static MZ_FORCEINLINE int deflateReset(mz_streamp pStream)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:509:31: warning: 'int deflateInit2(mz_streamp, int, int, int, int, int)' defined but not used [-Wunused-function]
+  509 |     static MZ_FORCEINLINE int deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+      |                               ^~~~~~~~~~~~
+../third-party/miniz/miniz.h:505:31: warning: 'int deflateInit(mz_streamp, int)' defined but not used [-Wunused-function]
+  505 |     static MZ_FORCEINLINE int deflateInit(mz_streamp pStream, int level)
+      |                               ^~~~~~~~~~~
+writing build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\pation.cp314-mingw_x86_64_ucrt_gnu.def
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -march=nocona -msahf -mtune=generic -O2 -pipe -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wp,-D__USE_MINGW_ANSI_STDIO=1 -O3 -shared -Wl,--enable-auto-image-base -fno-semantic-interposition -s build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\context.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\document.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\state.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\font.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\page.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\parser.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\stream.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\writer.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pdf\xref.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\third-party\img\lodepng.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\third-party\miniz\miniz.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\wrapper-python.o build\temp.mingw_x86_64_ucrt_gnu-cpython-314\..\src\pation\pation.cp314-mingw_x86_64_ucrt_gnu.def -LC:\msys64\ucrt64/lib -lpython3.14 -o build\lib.mingw_x86_64_ucrt_gnu-cpython-314\pation.cp314-mingw_x86_64_ucrt_gnu.pyd
+copying build\lib.mingw_x86_64_ucrt_gnu-cpython-314\pation.cp314-mingw_x86_64_ucrt_gnu.pyd -> 

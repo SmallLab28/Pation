@@ -1,0 +1,30 @@
+Determining size of size_t passed with the following output:
+Change Dir: '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+
+Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/gmake -f Makefile cmTC_4dbfe/fast
+/usr/sbin/gmake  -f CMakeFiles/cmTC_4dbfe.dir/build.make CMakeFiles/cmTC_4dbfe.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_4dbfe.dir/SIZE_T.c.o
+/root/emsdk/upstream/emscripten/emcc    -MD -MT CMakeFiles/cmTC_4dbfe.dir/SIZE_T.c.o -MF CMakeFiles/cmTC_4dbfe.dir/SIZE_T.c.o.d -o CMakeFiles/cmTC_4dbfe.dir/SIZE_T.c.o -c /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CheckTypeSize/SIZE_T.c
+Linking C executable cmTC_4dbfe.js
+/usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_4dbfe.dir/link.txt --verbose=1
+/root/emsdk/upstream/emscripten/emcc @CMakeFiles/cmTC_4dbfe.dir/objects1.rsp -o cmTC_4dbfe.js @CMakeFiles/cmTC_4dbfe.dir/linkLibs.rsp
+gmake[1]: Leaving directory '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+
+
+
+Determining size of unsigned long passed with the following output:
+Change Dir: '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+
+Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/gmake -f Makefile cmTC_657ec/fast
+/usr/sbin/gmake  -f CMakeFiles/cmTC_657ec.dir/build.make CMakeFiles/cmTC_657ec.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_657ec.dir/UNSIGNED_LONG.c.o
+/root/emsdk/upstream/emscripten/emcc    -MD -MT CMakeFiles/cmTC_657ec.dir/UNSIGNED_LONG.c.o -MF CMakeFiles/cmTC_657ec.dir/UNSIGNED_LONG.c.o.d -o CMakeFiles/cmTC_657ec.dir/UNSIGNED_LONG.c.o -c /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CheckTypeSize/UNSIGNED_LONG.c
+Linking C executable cmTC_657ec.js
+/usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_657ec.dir/link.txt --verbose=1
+/root/emsdk/upstream/emscripten/emcc @CMakeFiles/cmTC_657ec.dir/objects1.rsp -o cmTC_657ec.js @CMakeFiles/cmTC_657ec.dir/linkLibs.rsp
+gmake[1]: Leaving directory '/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/CMakeFiles/CMakeTmp'
+
+
+

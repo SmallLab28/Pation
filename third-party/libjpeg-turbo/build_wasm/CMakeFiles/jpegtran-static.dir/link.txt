@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/jpegtran-static.dir/objects1.rsp -o jpegtran-static.js @CMakeFiles/jpegtran-static.dir/linkLibs.rsp

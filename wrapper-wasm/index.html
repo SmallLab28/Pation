@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pation WASM Tester</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #log { width: 100%; height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Pation PDF Compressor (WASM)</h1>
+    <input type="file" id="pdfInput" accept="application/pdf">
+    <br><br>
+    <label>DPI: <input type="number" id="dpi" value="150"></label>
+    <label>Quality: <input type="number" id="quality" value="20"></label>
+    <br><br>
+    <button id="compressBtn">Compress PDF</button>
+    <br><br>
+    <a id="downloadLink" style="display: none;">Download Compressed PDF</a>
+    <br><br>
+    <textarea id="log" readonly></textarea>
+
+    <!-- Load the emscripten module -->
+    <script src="pation.js"></script>
+    <script>
+        let pationModule = null;
+        
+        function logMsg(msg) {
+            const log = document.getElementById('log');
+            log.value += msg + '\n';
+            log.scrollTop = log.scrollHeight;
+            console.log(msg);
+        }
+
+        // Initialize the module
+        createPationModule().then((mod) => {
+            pationModule = mod;
+            logMsg("WASM module loaded and ready!");
+        }).catch(err => {
+            logMsg("Failed to load WASM module: " + err);
+        });
+
+        document.getElementById('compressBtn').addEventListener('click', async () => {
+            if (!pationModule) {
+                alert("WASM module is not loaded yet. Please wait.");
+                return;
+            }
+
+            const fileInput = document.getElementById('pdfInput');
+            if (fileInput.files.length === 0) {
+                alert("Please select a PDF file first.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const dpi = parseInt(document.getElementById('dpi').value);
+            const quality = parseInt(document.getElementById('quality').value);
+
+            logMsg(`Loading ${file.name}...`);
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8View = new Uint8Array(arrayBuffer);
+
+            // Write to Emscripten Virtual File System
+            const inputName = 'input.pdf';
+            const outputName = 'output.pdf';
+            pationModule.FS.writeFile(inputName, uint8View);
+
+            logMsg("Compressing PDF... (this may take a moment)");
+            const startTime = performance.now();
+            
+            try {
+                // Call the C++ function via Embind
+                const success = pationModule.compress_pdf(inputName, outputName, dpi, quality);
+                const endTime = performance.now();
+                
+                if (success) {
+                    logMsg(`Compression successful! Took ${(endTime - startTime).toFixed(2)} ms`);
+                    
+                    // Read output from VFS
+                    const outData = pationModule.FS.readFile(outputName);
+                    
+                    // Create download link
+                    const blob = new Blob([outData], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.getElementById('downloadLink');
+                    link.href = url;
+                    link.download = `compressed_${file.name}`;
+                    link.style.display = 'inline-block';
+                    link.innerText = `Download Compressed PDF (${(outData.length / 1024 / 1024).toFixed(2)} MB)`;
+                } else {
+                    logMsg("Compression failed.");
+                }
+            } catch (e) {
+                logMsg(`Error: ${e}`);
+            }
+        });
+    </script>
+</body>
+</html>

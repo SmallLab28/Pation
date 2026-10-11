@@ -1,0 +1,3 @@
+C:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\jpegtran-static.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\jpegtran-static.dir/objects.a @CMakeFiles\jpegtran-static.dir\objects1.rsp
+C:\msys64\ucrt64\bin\gcc.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\jpegtran-static.dir/objects.a -Wl,--no-whole-archive -o jpegtran-static.exe -Wl,--out-implib,libjpegtran-static.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\jpegtran-static.dir\linkLibs.rsp

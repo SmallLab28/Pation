@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/example-static.dir/objects1.rsp -o example-static.js @CMakeFiles/example-static.dir/linkLibs.rsp

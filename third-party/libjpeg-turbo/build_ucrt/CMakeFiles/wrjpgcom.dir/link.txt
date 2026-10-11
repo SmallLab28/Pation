@@ -1,0 +1,3 @@
+C:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\wrjpgcom.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\wrjpgcom.dir/objects.a @CMakeFiles\wrjpgcom.dir\objects1.rsp
+C:\msys64\ucrt64\bin\gcc.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\wrjpgcom.dir/objects.a -Wl,--no-whole-archive -o wrjpgcom.exe -Wl,--out-implib,libwrjpgcom.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\wrjpgcom.dir\linkLibs.rsp

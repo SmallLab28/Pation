@@ -1,0 +1,31 @@
+src/spng/CMakeFiles/zlib-static.dir/zlib/compress.c.o: \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/spng/zlib/compress.c \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/spng/zlib/zlib.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/spng/zlib/zconf.h \
+  /root/emsdk/upstream/lib/clang/24/include/stddef.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stddef.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_header_macro.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_ptrdiff_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_size_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_wchar_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_null.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_max_align_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_offsetof.h \
+  /root/emsdk/upstream/lib/clang/24/include/limits.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/limits.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/features.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/bits/alltypes.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/bits/limits.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/sys/types.h \
+  /root/emsdk/upstream/lib/clang/24/include/endian.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/endian.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/sys/select.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/compat/stdarg.h \
+  /root/emsdk/upstream/lib/clang/24/include/stdarg.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stdarg.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg_header_macro.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg___gnuc_va_list.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg_va_list.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg_va_arg.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg___va_copy.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stdarg_va_copy.h

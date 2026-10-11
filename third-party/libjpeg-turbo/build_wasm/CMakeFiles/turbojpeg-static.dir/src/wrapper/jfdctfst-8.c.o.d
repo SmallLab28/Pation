@@ -1,0 +1,35 @@
+CMakeFiles/turbojpeg-static.dir/src/wrapper/jfdctfst-8.c.o: \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/jfdctfst-8.c \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jfdctfst.c \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jinclude.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/jconfig.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/jconfigint.h \
+  /root/emsdk/upstream/lib/clang/24/include/stddef.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stddef.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_header_macro.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_ptrdiff_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_size_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_wchar_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_null.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_max_align_t.h \
+  /root/emsdk/upstream/lib/clang/24/include/__stddef_offsetof.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/compat/stdlib.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stdlib.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/features.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/bits/alltypes.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/alloca.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stdio.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/wasi/api.h \
+  /root/emsdk/upstream/lib/clang/24/include/stdint.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/stdint.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/compat/string.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/string.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/strings.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/errno.h \
+  /root/emsdk/upstream/emscripten/cache/sysroot/include/bits/errno.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jpeglib.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jmorecfg.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jpegint.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jerror.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jdct.h \
+  /mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/src/wrapper/../jsamplecomp.h

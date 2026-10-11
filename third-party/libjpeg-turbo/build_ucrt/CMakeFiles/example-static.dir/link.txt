@@ -1,0 +1,3 @@
+C:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\example-static.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\example-static.dir/objects.a @CMakeFiles\example-static.dir\objects1.rsp
+C:\msys64\ucrt64\bin\gcc.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\example-static.dir/objects.a -Wl,--no-whole-archive -o example-static.exe -Wl,--out-implib,libexample-static.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\example-static.dir\linkLibs.rsp

@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/cjpeg-static.dir/objects1.rsp -o cjpeg-static.js @CMakeFiles/cjpeg-static.dir/linkLibs.rsp

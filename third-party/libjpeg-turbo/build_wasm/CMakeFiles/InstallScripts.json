@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/cmake_install.cmake",
+		"/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/src/spng/cmake_install.cmake",
+		"/mnt/c/Users/ACER/Downloads/Pation/third-party/libjpeg-turbo/build_wasm/src/md5/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

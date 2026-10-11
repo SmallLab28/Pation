@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/tjbench-static.dir/objects1.rsp -o tjbench-static.js @CMakeFiles/tjbench-static.dir/linkLibs.rsp

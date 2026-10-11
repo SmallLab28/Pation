@@ -1,0 +1,17 @@
+setup.py
+wrapper-python.cpp
+../src/img/dct.cpp
+../src/img/img.cpp
+../src/pation/context.c
+../src/pation/document.c
+../src/pation/state.cpp
+../src/pdf/font.cpp
+../src/pdf/page.cpp
+../src/pdf/parser.cpp
+../src/pdf/stream.cpp
+../src/pdf/writer.cpp
+../src/pdf/xref.cpp
+pation.egg-info/PKG-INFO
+pation.egg-info/SOURCES.txt
+pation.egg-info/dependency_links.txt
+pation.egg-info/top_level.txt

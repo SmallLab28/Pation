@@ -1,0 +1,3 @@
+C:\msys64\ucrt64\bin\cmake.exe -E rm -f CMakeFiles\djpeg-static.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\djpeg-static.dir/objects.a @CMakeFiles\djpeg-static.dir\objects1.rsp
+C:\msys64\ucrt64\bin\gcc.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\djpeg-static.dir/objects.a -Wl,--no-whole-archive -o djpeg-static.exe -Wl,--out-implib,libdjpeg-static.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\djpeg-static.dir\linkLibs.rsp

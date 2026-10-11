@@ -1,0 +1,8 @@
+build/
+scratch/
+data/1gb.pdf
+*.pdf
+build_test/
+build_wasm_pation
+data/
+emsdk/

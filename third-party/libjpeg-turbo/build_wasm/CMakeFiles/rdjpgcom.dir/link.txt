@@ -1,0 +1,1 @@
+/root/emsdk/upstream/emscripten/emcc -O3 -DNDEBUG @CMakeFiles/rdjpgcom.dir/objects1.rsp -o rdjpgcom.js
