@@ -683,17 +683,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                             const uint8_t *use_pal = (is_devicen_cyk && pal.size() >= 3) ? rgb_pal.data() : pal.data();
                             size_t pal_size = (is_devicen_cyk && pal.size() >= 3) ? rgb_pal.size() : pal.size();
 
-                            if (pal_size < 768 && pal_size >= 256) {
-                                uint8_t *gray = (uint8_t*)malloc((size_t)decoded.width * decoded.height);
-                                for (long i = 0; i < (long)decoded.width * decoded.height; i++) {
-                                    uint8_t idx = decoded.pixels[i];
-                                    gray[i] = (idx < pal_size) ? use_pal[idx] : idx;
-                                }
-                                free(decoded.pixels);
-                                decoded.pixels = gray;
-                                decoded.components = 1;
-                                decoded.cs = PT_CS_GRAY;
-                            } else {
+                            if (pal_size >= 3) {
                                 uint8_t *rgb = (uint8_t*)malloc((size_t)decoded.width * decoded.height * 3);
                                 for (long i = 0; i < (long)decoded.width * decoded.height; i++) {
                                     uint8_t idx = decoded.pixels[i];
@@ -709,6 +699,16 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                                 decoded.pixels = rgb;
                                 decoded.components = 3;
                                 decoded.cs = PT_CS_RGB;
+                            } else {
+                                uint8_t *gray = (uint8_t*)malloc((size_t)decoded.width * decoded.height);
+                                for (long i = 0; i < (long)decoded.width * decoded.height; i++) {
+                                    uint8_t idx = decoded.pixels[i];
+                                    gray[i] = (idx < pal_size) ? use_pal[idx] : idx;
+                                }
+                                free(decoded.pixels);
+                                decoded.pixels = gray;
+                                decoded.components = 1;
+                                decoded.cs = PT_CS_GRAY;
                             }
                         }
                         
@@ -726,7 +726,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             }
 
             bool is_grayscale = true;
-            if (img_channels == 4) is_grayscale = false;
+            if (img_channels == 4 || is_devicen_cyk) is_grayscale = false;
             else if (img_channels >= 3 && !raw_pixels.empty()) {
                 int color_pixels = 0;
                 for (size_t i = 0; i < raw_pixels.size(); i += img_channels) {
