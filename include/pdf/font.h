@@ -138,6 +138,9 @@ uint8_t *pt_font_subset(const pt_font    *font,
                         const pt_glyph_set *gs,
                         size_t            *out_size);
 
+uint8_t *pt_cff_subset(const uint8_t *data, size_t size,
+                       const pt_glyph_set *gs, size_t *out_size);
+
 #ifdef __cplusplus
 }
 #endif

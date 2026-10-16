@@ -41,9 +41,22 @@ int main (int argc, char **argv) {
     const char *filepath = argv[1];
     const char *outpath = argv[2];
     int target_dpi = 150;
+    int target_quality = 25;
+    bool traditional_xref = false;
+
     if (argc >= 4) {
         target_dpi = std::atoi(argv[3]);
         if (target_dpi <= 0) target_dpi = 150;
+    }
+    if (argc >= 5) {
+        target_quality = std::atoi(argv[4]);
+        if (target_quality <= 0) target_quality = 25;
+    }
+    if (argc >= 6) {
+        std::string arg = argv[5];
+        if (arg == "1" || arg == "true" || arg == "traditional") {
+            traditional_xref = true;
+        }
     }
 
     pt_context *ctx = pt_ctx_create();
@@ -61,7 +74,9 @@ int main (int argc, char **argv) {
     
     if (st && st->writer) {
         st->writer->target_dpi = target_dpi;
-        printf("Optimising and rewriting PDF to %s with %d DPI target...\n", outpath, target_dpi);
+        st->writer->target_quality = target_quality;
+        st->writer->traditional_xref = traditional_xref;
+        printf("Optimising and rewriting PDF to %s with %d DPI, %d Quality...\n", outpath, target_dpi, target_quality);
         int res = st->writer->rewrite(ctx, st, outpath);
         if (res == 0) {
             printf("PDF rewritten successfully! Check %s\n", outpath);

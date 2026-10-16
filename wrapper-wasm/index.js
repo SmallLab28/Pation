@@ -13,9 +13,20 @@ async function getModule() {
 
     const moduleOptions = {
         locateFile: (path, scriptDirectory) => {
-            if (typeof window !== 'undefined' || typeof document !== 'undefined' || typeof importScripts !== 'undefined' || typeof WorkerGlobalScope !== 'undefined') {
-                return '/pation/' + path;
+            // 1. Nếu có biến cấu hình toàn cục PATION_WASM_PATH
+            if (typeof globalThis !== 'undefined' && globalThis.PATION_WASM_PATH) {
+                return globalThis.PATION_WASM_PATH.replace(/\/+$/, '') + '/' + path;
             }
+            // 2. Tìm thư mục chứa pation.js từ document.currentScript hoặc thẻ script đã nạp
+            if (typeof document !== 'undefined') {
+                const scripts = document.querySelectorAll('script[src*="pation"]');
+                if (scripts.length > 0) {
+                    const src = scripts[scripts.length - 1].src;
+                    const baseDir = src.substring(0, src.lastIndexOf('/') + 1);
+                    return baseDir + path;
+                }
+            }
+            // 3. Mặc định dùng scriptDirectory hoặc cùng thư mục hiện tại
             return (scriptDirectory || '') + path;
         }
     };
@@ -30,30 +41,27 @@ async function getModule() {
 
     if (!factory) {
         if (typeof importScripts === 'function') {
-            importScripts('/pation/pation.js');
+            importScripts('pation.js');
             factory = typeof createPationModule === 'function' ? createPationModule : (globalThis.createPationModule || self.createPationModule);
         } else if (typeof document !== 'undefined') {
             await new Promise((resolve, reject) => {
                 const script = document.createElement('script');
-                script.src = '/pation/pation.js';
+                script.src = 'pation.js';
                 script.onload = resolve;
-                script.onerror = () => reject(new Error('Pation WASM: Không thể tải /pation/pation.js'));
+                script.onerror = () => reject(new Error('Pation WASM: Không thể tải pation.js'));
                 document.head.appendChild(script);
             });
             factory = typeof createPationModule === 'function' ? createPationModule : (window.createPationModule || globalThis.createPationModule);
         } else if (typeof process !== 'undefined' && process.versions?.node) {
             try {
-                const fs = await import('fs');
-                const vm = await import('vm');
-                const path = await import('path');
-                const { fileURLToPath } = await import('url');
-                const { createRequire } = await import('module');
-                const dir = path.dirname(fileURLToPath(import.meta.url));
-                globalThis.require = createRequire(import.meta.url);
-                globalThis.__dirname = dir;
-                const code = fs.readFileSync(path.join(dir, 'pation.js'), 'utf8');
-                vm.runInThisContext(code);
-                factory = globalThis.createPationModule;
+                let pationPath;
+                if (typeof __dirname !== 'undefined') {
+                    pationPath = require('path').join(__dirname, 'pation.js');
+                } else {
+                    pationPath = './pation.js';
+                }
+                const req = typeof require === 'function' ? require : (await import('module')).createRequire(process.cwd() + '/');
+                factory = req(pationPath);
             } catch (e) {
                 console.error("Lỗi nạp pation.js trong Node:", e);
             }
@@ -72,18 +80,23 @@ async function getModule() {
  * Nén file PDF bằng WebAssembly Pation
  * 
  * @param {Uint8Array|ArrayBuffer|File|Blob} fileData Dữ liệu PDF đầu vào
- * @param {number|Object} [optionsOrDpi=150] DPI (number) hoặc options { dpi, quality }
+ * @param {number|Object} [optionsOrDpi=150] DPI (number) hoặc options { dpi, quality, onProgress }
  * @returns {Promise<Uint8Array>} Dữ liệu PDF đã nén
  */
 async function compressPdf(fileData, optionsOrDpi = 150) {
     let dpi = 150;
     let quality = 25;
+    let onProgress = null;
 
+    let traditional_xref = false;
     if (typeof optionsOrDpi === 'number') {
         dpi = optionsOrDpi;
     } else if (typeof optionsOrDpi === 'object' && optionsOrDpi !== null) {
         if (optionsOrDpi.dpi !== undefined) dpi = optionsOrDpi.dpi;
         if (optionsOrDpi.quality !== undefined) quality = optionsOrDpi.quality;
+        if (typeof optionsOrDpi.onProgress === 'function') onProgress = optionsOrDpi.onProgress;
+        if (optionsOrDpi.traditional_xref !== undefined) traditional_xref = !!optionsOrDpi.traditional_xref;
+        if (optionsOrDpi.use_traditional_xref !== undefined) traditional_xref = !!optionsOrDpi.use_traditional_xref;
     }
     let uint8Data;
     if (fileData instanceof Uint8Array) {
@@ -103,7 +116,41 @@ async function compressPdf(fileData, optionsOrDpi = 150) {
 
     try {
         Module.FS.writeFile(inputName, uint8Data);
-        const success = Module.compress_pdf(inputName, outputName, dpi, quality);
+        let success = false;
+        if (onProgress && typeof Module.compress_pdf_with_progress === 'function') {
+            let lastCallTime = 0;
+            let lastReportedPct = -1;
+            const wasmCallback = (current, total, percent) => {
+                const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                const roundedPct = Math.round(percent * 10) / 10;
+                if (percent >= 100 || lastReportedPct < 0 || now - lastCallTime >= 60 || (roundedPct - lastReportedPct >= 0.5)) {
+                    lastCallTime = now;
+                    lastReportedPct = roundedPct;
+                    try {
+                        onProgress({
+                            current,
+                            total,
+                            percent: roundedPct,
+                            currentPage: current,
+                            totalPages: total
+                        });
+                    } catch (e) {
+                        console.error("Lỗi trong onProgress callback:", e);
+                    }
+                }
+            };
+            if (traditional_xref && typeof Module.compress_pdf_with_progress_ext === 'function') {
+                success = Module.compress_pdf_with_progress_ext(inputName, outputName, dpi, quality, wasmCallback, true);
+            } else {
+                success = Module.compress_pdf_with_progress(inputName, outputName, dpi, quality, wasmCallback);
+            }
+        } else {
+            if (traditional_xref && typeof Module.compress_pdf_ext === 'function') {
+                success = Module.compress_pdf_ext(inputName, outputName, dpi, quality, true);
+            } else {
+                success = Module.compress_pdf(inputName, outputName, dpi, quality);
+            }
+        }
         if (!success) {
             throw new Error("Pation WASM: Quá trình nén PDF thất bại.");
         }
@@ -131,5 +178,3 @@ if (typeof globalThis !== 'undefined') {
     globalThis.PationCompressor = { compressPdf, getModule };
 }
 
-export { compressPdf, getModule };
-export default compressPdf;

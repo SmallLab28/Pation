@@ -6,3 +6,6 @@ build_test/
 build_wasm_pation
 data/
 emsdk/
+build.txt
+test_wrapper.py
+test_compress.mjs

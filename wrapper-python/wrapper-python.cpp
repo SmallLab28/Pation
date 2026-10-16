@@ -31,16 +31,37 @@ static pt_state* pt_load_pdf(pt_context *ctx, const char *filepath) {
     return st; 
 }
 
+static void py_progress_thunk(int current, int total, double percent, void *user_data) {
+    PyObject *cb = (PyObject*)user_data;
+    if (cb && PyCallable_Check(cb)) {
+        PyGILState_STATE gstate = PyGILState_Ensure();
+        PyObject *arglist = Py_BuildValue("(iid)", current, total, percent);
+        if (arglist) {
+            PyObject *result = PyObject_CallObject(cb, arglist);
+            Py_XDECREF(result);
+            Py_DECREF(arglist);
+        }
+        PyGILState_Release(gstate);
+    }
+}
+
 static PyObject* pation_compress(PyObject* self, PyObject* args, PyObject* kwargs) {
     const char* input_path = NULL;
     const char* output_path = NULL;
     int target_dpi = 150;
-    int target_quality = 20;
+    int target_quality = 25;
+    PyObject* progress_callback = NULL;
+    int traditional_xref = 0;
     
-    static const char *kwlist[] = {"input_path", "output_path", "dpi", "quality", NULL};
+    static const char *kwlist[] = {"input_path", "output_path", "dpi", "quality", "on_progress", "traditional_xref", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|ii", (char**)kwlist, 
-                                     &input_path, &output_path, &target_dpi, &target_quality)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|iiOp", (char**)kwlist, 
+                                     &input_path, &output_path, &target_dpi, &target_quality, &progress_callback, &traditional_xref)) {
+        return NULL;
+    }
+
+    if (progress_callback && progress_callback != Py_None && !PyCallable_Check(progress_callback)) {
+        PyErr_SetString(PyExc_TypeError, "on_progress must be callable");
         return NULL;
     }
 
@@ -61,6 +82,14 @@ static PyObject* pation_compress(PyObject* self, PyObject* args, PyObject* kwarg
     if (st && st->writer) {
         st->writer->target_dpi = target_dpi;
         st->writer->target_quality = target_quality;
+        st->writer->traditional_xref = (traditional_xref != 0);
+        if (progress_callback && progress_callback != Py_None) {
+            st->writer->progress_cb = py_progress_thunk;
+            st->writer->progress_user_data = progress_callback;
+        } else {
+            st->writer->progress_cb = nullptr;
+            st->writer->progress_user_data = nullptr;
+        }
         res = st->writer->rewrite(ctx, st, output_path);
     }
     

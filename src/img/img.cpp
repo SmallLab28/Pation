@@ -89,6 +89,7 @@ pt_compressed pt_cmyk_jpeg_encode(const uint8_t *cmyk_pixels, int w, int h, int 
 
     int q = quality < 1 ? 1 : quality > 100 ? 100 : quality;
     tj3Set(tj_compress, TJPARAM_QUALITY, q);
+    tj3Set(tj_compress, TJPARAM_OPTIMIZE, 1);
     tj3Set(tj_compress, TJPARAM_SUBSAMP, TJSAMP_444);
     tj3Set(tj_compress, TJPARAM_COLORSPACE, TJCS_YCCK);
 
@@ -118,12 +119,38 @@ pt_compressed pt_dct_encode(const pt_image *image, int quality) {
     }
 
     int comp = image->components;
-    uint8_t* pixels = image->pixels;
-
     int clamped_quality = quality < 1 ? 1 : quality > 100 ? 100 : quality;
+
+    // Use TurboJPEG for high-performance, optimal Huffman tables, and maximum sharpness
+    tjhandle tj_compress = tj3Init(TJINIT_COMPRESS);
+    if (tj_compress) {
+        tj3Set(tj_compress, TJPARAM_QUALITY, clamped_quality);
+        tj3Set(tj_compress, TJPARAM_OPTIMIZE, 1);
+        int pixel_format = (comp == 1) ? TJPF_GRAY : TJPF_RGB;
+        int subsamp = (comp == 1) ? TJSAMP_GRAY : TJSAMP_420;
+        tj3Set(tj_compress, TJPARAM_SUBSAMP, subsamp);
+
+        uint8_t *out_jpeg = NULL;
+        size_t out_size = 0;
+        if (tj3Compress8(tj_compress, image->pixels, image->width, 0, image->height, pixel_format, &out_jpeg, &out_size) == 0 && out_jpeg && out_size > 0) {
+            result.data = (uint8_t*)std::malloc(out_size);
+            if (result.data) {
+                std::memcpy(result.data, out_jpeg, out_size);
+                result.size = out_size;
+                result.filter = PT_FILTER_DCT;
+            }
+            tj3Free(out_jpeg);
+            tj3Destroy(tj_compress);
+            return result;
+        }
+        tj3Destroy(tj_compress);
+    }
+
+    // Fallback to jpge if TurboJPEG is unavailable
+    uint8_t* pixels = image->pixels;
     jpge::params params;
     params.m_quality = clamped_quality;
-    params.m_two_pass_flag = false;
+    params.m_two_pass_flag = true;
     if (comp == 1) {
         params.m_subsampling = jpge::Y_ONLY;
     } else {

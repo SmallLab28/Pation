@@ -8,11 +8,16 @@ import time
 input_pdf = "125-65-PB.pdf"
 output_pdf = "test_cpy.pdf"
 
+def on_progress(current, total, percent):
+    print(f"\r[Progress] Trang {current}/{total} ({percent:.1f}%)", end="", flush=True)
+
 print("Compressing PDF with Python wrapper...")
 start_time = time.time()
 success = pation.compress(
-    input_path=input_pdf, output_path=output_pdf, dpi=150, quality=20
+    input_path=input_pdf, output_path=output_pdf, dpi=72, quality=25,
+    on_progress=on_progress
 )
+print() # newline
 end_time = time.time()
 
 if success:
