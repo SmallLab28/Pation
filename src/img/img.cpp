@@ -90,6 +90,7 @@ pt_compressed pt_cmyk_jpeg_encode(const uint8_t *cmyk_pixels, int w, int h, int 
     int q = quality < 1 ? 1 : quality > 100 ? 100 : quality;
     tj3Set(tj_compress, TJPARAM_QUALITY, q);
     tj3Set(tj_compress, TJPARAM_OPTIMIZE, 1);
+    tj3Set(tj_compress, TJPARAM_PROGRESSIVE, 1);
     tj3Set(tj_compress, TJPARAM_SUBSAMP, TJSAMP_444);
     tj3Set(tj_compress, TJPARAM_COLORSPACE, TJCS_YCCK);
 
@@ -126,6 +127,7 @@ pt_compressed pt_dct_encode(const pt_image *image, int quality) {
     if (tj_compress) {
         tj3Set(tj_compress, TJPARAM_QUALITY, clamped_quality);
         tj3Set(tj_compress, TJPARAM_OPTIMIZE, 1);
+        tj3Set(tj_compress, TJPARAM_PROGRESSIVE, 1);
         int pixel_format = (comp == 1) ? TJPF_GRAY : TJPF_RGB;
         int subsamp = (comp == 1) ? TJSAMP_GRAY : TJSAMP_420;
         tj3Set(tj_compress, TJPARAM_SUBSAMP, subsamp);

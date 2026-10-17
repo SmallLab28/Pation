@@ -5,10 +5,33 @@
 #include <string.h>
 
 
+#ifdef _WIN32
+#include <windows.h>
+static FILE *pt_open_utf8(const char *path, const char *mode) {
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+    int mlen = MultiByteToWideChar(CP_UTF8, 0, mode, -1, NULL, 0);
+    if (wlen > 0 && mlen > 0) {
+        wchar_t *wpath = (wchar_t*)malloc(wlen * sizeof(wchar_t));
+        wchar_t *wmode = (wchar_t*)malloc(mlen * sizeof(wchar_t));
+        MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, wlen);
+        MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode, mlen);
+        FILE *f = _wfopen(wpath, wmode);
+        free(wpath);
+        free(wmode);
+        if (f) return f;
+    }
+    return fopen(path, mode);
+}
+#else
+static FILE *pt_open_utf8(const char *path, const char *mode) {
+    return fopen(path, mode);
+}
+#endif
+
 FILE *pt_open (pt_context *ctx, pt_file *file) {
     // for pdf
     file->method = "rb";
-    file->f = fopen(file->file_name, file->method);
+    file->f = pt_open_utf8(file->file_name, file->method);
     if (file->f == NULL) {
         ctx->sys = PT_SYS_IO;
         printf("context.c: %d", __LINE__);

@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #include <chrono>
 #include "pdf/writer.h"
 #include "pdf/page.h"
@@ -26,6 +30,26 @@
 #include <map>
 #include <sstream>
 #include <set>
+
+#ifdef _WIN32
+static FILE *pt_writer_open_utf8(const char *path, const char *mode) {
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+    int mlen = MultiByteToWideChar(CP_UTF8, 0, mode, -1, NULL, 0);
+    if (wlen > 0 && mlen > 0) {
+        std::vector<wchar_t> wpath(wlen);
+        std::vector<wchar_t> wmode(mlen);
+        MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath.data(), wlen);
+        MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode.data(), mlen);
+        FILE *f = _wfopen(wpath.data(), wmode.data());
+        if (f) return f;
+    }
+    return fopen(path, mode);
+}
+#else
+static FILE *pt_writer_open_utf8(const char *path, const char *mode) {
+    return fopen(path, mode);
+}
+#endif
 
 struct MemWriter {
     std::vector<uint8_t> data;
@@ -636,6 +660,23 @@ static void collect_ref_ids_for_key(const std::string &dict_str, const std::stri
     }
 }
 
+static void compute_image_target_dimensions(long w, long h, int target_dpi, long &new_w, long &new_h) {
+    new_w = w;
+    new_h = h;
+    if (w <= 0 || h <= 0) return;
+    if (target_dpi < 20) target_dpi = 20;
+    int target_max_dim = (int)(target_dpi * 11.7);
+    if (target_max_dim < 250) target_max_dim = 250;
+    int max_dim = std::max(w, h);
+    double scale = (max_dim > target_max_dim && max_dim > 300) ? (double)target_max_dim / max_dim : 1.0;
+    if (scale < 1.0) {
+        new_w = (long)(w * scale);
+        new_h = (long)(h * scale);
+    }
+    if (new_w < 16) new_w = std::min((long)w, 16L);
+    if (new_h < 16) new_h = std::min((long)h, 16L);
+}
+
 static bool image_can_downsample(const std::string &dict_str) {
     if (dict_str.find("/ImageMask true") != std::string::npos ||
         dict_str.find("/SMask") != std::string::npos ||
@@ -857,7 +898,9 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
         // Recompressing images smaller than 32px or area < 4096px yields no size reduction,
         // degrades thin lines, and wastes massive CPU time on sliced layouts.
         bool is_smask_target = (s_smask_targets.find(obj_id) != s_smask_targets.end());
-        if (!is_smask_target && (w <= 0 || h <= 0 || w < 32 || h < 32 || (w * h < 4096))) {
+        bool is_smask_obj = (s_known_smasks.count(obj_id) > 0);
+        bool has_smask = (dict_str.find("/SMask") != std::string::npos);
+        if (!is_smask_target && !is_smask_obj && !has_smask && (w <= 0 || h <= 0 || w < 32 || h < 32 || (w * h < 4096))) {
             g_image_fallback++;
             return sanitize_raw_stream_dict(obj_id, gen, raw);
         }
@@ -868,9 +911,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             bool was_jpx = (dict_str.find("/JPXDecode") != std::string::npos);
             long bpc = dict_int(dict_str, "/BitsPerComponent", 8);
             bool is_image_mask = (dict_str.find("/ImageMask true") != std::string::npos);
-            bool has_explicit_mask = (dict_str.find("/Mask") != std::string::npos &&
-                                      dict_str.find("/SMask") == std::string::npos);
-            bool is_smask_obj = (s_known_smasks.count(obj_id) > 0);
+            bool has_explicit_mask = (dict_str.find("/Mask") != std::string::npos && !has_smask);
             bool supported_filter = was_dct || was_flate || was_jpx;
             bool supported_depth = bpc == 1 || bpc == 8;
             std::string real_cs = dict_str;
@@ -884,7 +925,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 std::string resolved = resolve_image_colorspace(ctx, st, dict_str);
                 if (!resolved.empty()) real_cs = resolved;
             }
-            bool is_indexed = (real_cs.find("/Indexed") != std::string::npos);
+            bool is_indexed = (dict_str.find("/Indexed") != std::string::npos || real_cs.find("/Indexed") != std::string::npos);
             bool is_devicen_cyk = false;
             if (is_indexed) {
                 if (real_cs.find("Cyan") != std::string::npos && real_cs.find("Yellow") != std::string::npos) {
@@ -1074,7 +1115,7 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             }
 
             bool is_grayscale = true;
-            if (img_channels == 4 || is_devicen_cyk) is_grayscale = false;
+            if (img_channels == 4 || is_devicen_cyk || has_smask || is_smask_obj) is_grayscale = false;
             else if (img_channels >= 3 && !raw_pixels.empty()) {
                 size_t color_pixels = 0;
                 size_t total_pixels = (size_t)w * h;
@@ -1107,27 +1148,20 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             long new_w = w, new_h = h;
             
             if (!skip_image && !raw_pixels.empty()) {
-                if (is_smask_obj && s_smask_targets.find(obj_id) != s_smask_targets.end()) {
-                    const auto &target = s_smask_targets[obj_id];
-                    new_w = target.target_w;
-                    new_h = target.target_h;
+                if (is_smask_obj) {
+                    if (s_smask_targets.find(obj_id) != s_smask_targets.end()) {
+                        const auto &target = s_smask_targets[obj_id];
+                        new_w = target.target_w;
+                        new_h = target.target_h;
+                    } else {
+                        new_w = w;
+                        new_h = h;
+                    }
                 } else {
                     int target_dpi = (st->writer && st->writer->target_dpi > 0) ? st->writer->target_dpi : 150;
-                    if (target_dpi < 20) target_dpi = 20; 
-
-                    int target_max_dim = (int)(target_dpi * 11.7);
-                    if (target_max_dim < 250) target_max_dim = 250;
-                    int max_dim = std::max(w, h);
-                    
-                    double scale = (max_dim > target_max_dim && max_dim > 300) ? (double)target_max_dim / max_dim : 1.0;
-                    
-                    if (scale < 1.0 && (was_dct || was_flate || was_jpx || is_devicen_cyk)) {
-                        new_w = (long)(w * scale);
-                        new_h = (long)(h * scale);
+                    if (was_dct || was_flate || was_jpx || is_devicen_cyk) {
+                        compute_image_target_dimensions(w, h, target_dpi, new_w, new_h);
                     }
-                
-                    if (new_w < 16) new_w = std::min((long)w, 16L);
-                    if (new_h < 16) new_h = std::min((long)h, 16L);
                 }
 
                 stbir_pixel_layout resize_layout = (img_channels == 1) ? STBIR_1CHANNEL :
@@ -1137,20 +1171,17 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 std::vector<uint8_t> scaled_pixels;
                 if (new_w != w || new_h != h) {
                     scaled_pixels.resize(new_w * new_h * img_channels);
-                    stbir_resize_uint8_srgb(raw_pixels.data(), (int)w, (int)h, 0, scaled_pixels.data(), (int)new_w, (int)new_h, 0, resize_layout);
+                    if (is_smask_obj) {
+                        stbir_resize_uint8_linear(raw_pixels.data(), (int)w, (int)h, 0, scaled_pixels.data(), (int)new_w, (int)new_h, 0, STBIR_1CHANNEL);
+                    } else {
+                        stbir_resize_uint8_srgb(raw_pixels.data(), (int)w, (int)h, 0, scaled_pixels.data(), (int)new_w, (int)new_h, 0, resize_layout);
+                    }
                 } else {
                     scaled_pixels = raw_pixels;
                 }
 
-                if (is_smask_obj) {
-                    size_t deflated_size = 0;
-                    void *deflated = tdefl_compress_mem_to_heap(
-                        scaled_pixels.data(), scaled_pixels.size(), &deflated_size,
-                        TDEFL_DEFAULT_MAX_PROBES);
-                    if (deflated && deflated_size > 0) {
-                        out_flate.assign((uint8_t*)deflated, (uint8_t*)deflated + deflated_size);
-                        mz_free(deflated);
-                    }
+                if (is_smask_obj || (has_smask && was_flate)) {
+                    out_flate = flate_compress(scaled_pixels.data(), scaled_pixels.size(), 6);
                 } else {
                     pt_image image = {};
                     image.pixels = scaled_pixels.data();
@@ -1174,7 +1205,8 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
 
             if (!out_jpeg.empty() || !out_flate.empty()) {
                 size_t encoded_size = out_jpeg.empty() ? out_flate.size() : out_jpeg.size();
-                if (encoded_size >= stream_len && !is_smask_obj) {
+                bool is_resized = (new_w != w || new_h != h);
+                if (encoded_size >= stream_len && !is_resized) {
                     fo = sanitize_raw_stream_dict(obj_id, gen, raw);
                 } else {
                     remove_dict_entry(dict_str, "/Filter");
@@ -1222,6 +1254,88 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
     g_image_fallback++;
     fo = sanitize_raw_stream_dict(obj_id, gen, raw);
     return fo;
+}
+
+static void remove_unreachable_objects(std::map<int, FlatObj> &output_objs, int root_obj) {
+    if (root_obj <= 0 || output_objs.empty()) return;
+    if (output_objs.find(root_obj) == output_objs.end()) return;
+
+    std::unordered_set<int> reachable;
+    std::vector<int> queue;
+
+    reachable.insert(root_obj);
+    queue.push_back(root_obj);
+
+    while (!queue.empty()) {
+        int curr_id = queue.back();
+        queue.pop_back();
+
+        auto it = output_objs.find(curr_id);
+        if (it == output_objs.end()) continue;
+
+        const auto &data = it->second.data;
+        if (data.empty()) continue;
+
+        size_t scan_len = data.size();
+        const uint8_t needle[] = "stream";
+        if (scan_len > 10) {
+            auto sit = std::search(data.begin(), data.end(), needle, needle + 6);
+            if (sit != data.end()) {
+                scan_len = (size_t)(sit - data.begin());
+            }
+        }
+
+        const uint8_t *bytes = data.data();
+        size_t p = 0;
+        while (p < scan_len) {
+            if (isdigit(bytes[p])) {
+                if (p == 0 || is_pdf_delimiter((char)bytes[p - 1])) {
+                    size_t num_start = p;
+                    while (p < scan_len && isdigit(bytes[p])) p++;
+                    size_t num_end = p;
+
+                    size_t p2 = p;
+                    while (p2 < scan_len && isspace(bytes[p2])) p2++;
+                    if (p2 < scan_len && isdigit(bytes[p2])) {
+                        while (p2 < scan_len && isdigit(bytes[p2])) p2++;
+                        while (p2 < scan_len && isspace(bytes[p2])) p2++;
+                        if (p2 < scan_len && bytes[p2] == 'R' && (p2 + 1 >= scan_len || is_pdf_delimiter((char)bytes[p2 + 1]))) {
+                            int target_id = 0;
+                            for (size_t k = num_start; k < num_end; k++) {
+                                target_id = target_id * 10 + (bytes[k] - '0');
+                                if (target_id > 10000000) break;
+                            }
+                            if (target_id > 0 && output_objs.find(target_id) != output_objs.end()) {
+                                if (reachable.insert(target_id).second) {
+                                    queue.push_back(target_id);
+                                }
+                            }
+                            p = p2 + 1;
+                            continue;
+                        }
+                    }
+                }
+                p++;
+            } else {
+                p++;
+            }
+        }
+    }
+
+    size_t removed_bytes = 0;
+    int removed_count = 0;
+    for (auto it = output_objs.begin(); it != output_objs.end(); ) {
+        if (reachable.find(it->first) == reachable.end()) {
+            removed_bytes += it->second.data.size();
+            removed_count++;
+            it = output_objs.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    printf("writer: Garbage Collection: kept %zu reachable objects, purged %d dead/orphan objects (freed %.2f MB)\n",
+           output_objs.size(), removed_count, (double)removed_bytes / (1024.0 * 1024.0));
 }
 
 int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
@@ -1329,22 +1443,18 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
                     while (p < hdr_s.size() && isdigit((unsigned char)hdr_s[p])) p++;
                     while (p < hdr_s.size() && isspace((unsigned char)hdr_s[p])) p++;
                     if (p < hdr_s.size() && hdr_s[p] == 'R' && smask_id > 0) {
+                        s_known_smasks.insert(smask_id);
                         long w = dict_int(hdr_s, "/Width", -1);
                         long h = dict_int(hdr_s, "/Height", -1);
-                        if (w > 0 && h > 0) {
+                        bool base_eligible = (hdr_s.find("/Separation") == std::string::npos &&
+                                              hdr_s.find("/DeviceN") == std::string::npos &&
+                                              hdr_s.find("/ImageMask true") == std::string::npos);
+                        if (base_eligible && w > 0 && h > 0) {
                             int target_dpi = (st->writer && st->writer->target_dpi > 0) ? st->writer->target_dpi : 150;
-                            if (target_dpi < 50) target_dpi = 50;
-                            int target_max_dim = (int)(target_dpi * 11.7);
-                            if (target_max_dim < 600) target_max_dim = 600;
-                            int max_dim = std::max(w, h);
-                            double scale = (max_dim > target_max_dim) ? (double)target_max_dim / max_dim : 1.0;
-                            long new_w = (long)(w * scale);
-                            long new_h = (long)(h * scale);
-                            if (new_w < 16) new_w = std::min((long)w, 16L);
-                            if (new_h < 16) new_h = std::min((long)h, 16L);
+                            long new_w = w, new_h = h;
+                            compute_image_target_dimensions(w, h, target_dpi, new_w, new_h);
                             s_smask_targets[smask_id] = { new_w, new_h };
                         }
-                        s_known_smasks.insert(smask_id);
                     }
                 }
             }
@@ -1581,7 +1691,7 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
     printf("writer: total output objects: %zu\n", output_objs.size());
     fflush(stdout);
 
-    FILE *out = fopen(out_path, "wb");
+    FILE *out = pt_writer_open_utf8(out_path, "wb");
     if (!out) {
         printf("writer: ERROR: failed to open output file %s\n", out_path);
         return -1;
@@ -1716,6 +1826,8 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             }
         }
     }
+
+    remove_unreachable_objects(output_objs, root_obj);
 
     bool use_stream = (!st->writer || !st->writer->traditional_xref);
     
@@ -2109,6 +2221,19 @@ static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_
     
     size_t idx = s.find("/Indexed");
     if (idx == std::string::npos) {
+        size_t stream_pos = s.find("stream");
+        size_t endstream_pos = s.find("endstream");
+        if (stream_pos != std::string::npos && endstream_pos != std::string::npos) {
+            stream_pos += 6;
+            while(stream_pos < s.size() && (s[stream_pos] == '\r' || s[stream_pos] == '\n')) stream_pos++;
+            const unsigned char *src = (const unsigned char*)s.data() + stream_pos;
+            size_t src_len = (endstream_pos > stream_pos) ? endstream_pos - stream_pos : 0;
+            if (s.find("FlateDecode") != std::string::npos) {
+                pal = flate_decompress(src, src_len);
+            } else {
+                pal.assign(src, src + src_len);
+            }
+        }
         ctx->file->seek(ctx, ctx->file->f, old_pos, PT_SEEK_SET);
         s_pal_cache[cs_id] = pal;
         return pal;

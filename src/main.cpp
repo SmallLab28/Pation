@@ -1,4 +1,11 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#endif
 #include <iostream>
+#include <vector>
+#include <string>
 #include "pdf/xref.h"
 #include "pation/document.h"
 #include "pdf/page.h"
@@ -33,6 +40,28 @@ pt_state* pt_load_pdf(pt_context *ctx, const char *filepath) {
 
 
 int main (int argc, char **argv) {
+#ifdef _WIN32
+    int w_argc = 0;
+    wchar_t **w_argv = CommandLineToArgvW(GetCommandLineW(), &w_argc);
+    std::vector<std::string> utf8_args;
+    std::vector<char*> utf8_argv;
+    if (w_argv && w_argc > 0) {
+        utf8_args.resize(w_argc);
+        utf8_argv.resize(w_argc);
+        for (int i = 0; i < w_argc; i++) {
+            int len = WideCharToMultiByte(CP_UTF8, 0, w_argv[i], -1, NULL, 0, NULL, NULL);
+            if (len > 0) {
+                utf8_args[i].resize(len - 1);
+                WideCharToMultiByte(CP_UTF8, 0, w_argv[i], -1, &utf8_args[i][0], len, NULL, NULL);
+            }
+            utf8_argv[i] = &utf8_args[i][0];
+        }
+        argc = w_argc;
+        argv = utf8_argv.data();
+        LocalFree(w_argv);
+    }
+#endif
+
     if (argc < 3) {
         std::cout << "Usage: pation <input.pdf> <output.pdf> [target_dpi (default 150)]\n";
         return 1;
