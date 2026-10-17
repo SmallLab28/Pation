@@ -1,13 +1,4 @@
 #include <chrono>
-/*
-    writer.cpp - Pation PDF Rewriter / Optimiser (Production Grade)
-    
-    Properly handles:
-      - Type-1 objects (direct byte-offset objects)
-      - Type-2 objects (embedded in ObjStm containers) -- extracted and flattened
-      - Image recompression (JPEG downscale for size reduction)
-      - Traditional XRef table output (maximum compatibility)
-*/
 #include "pdf/writer.h"
 #include "pdf/page.h"
 #include "pdf/xref.h"
@@ -252,45 +243,81 @@ static std::unordered_map<int, bool> s_devicen_cyk_cache;
 
 
 
-static bool dict_has(const std::string &d, const char *key) {
-    return d.find(key) != std::string::npos;
+static inline bool is_pdf_delimiter(char c) {
+    return isspace((unsigned char)c) || c == '/' || c == '[' || c == ']' || 
+           c == '(' || c == ')' || c == '<' || c == '>' || c == '{' || c == '}' || c == '%';
 }
+
+static bool dict_has(const std::string &d, const std::string &key) {
+    size_t search_pos = 0;
+    while (search_pos < d.size()) {
+        size_t pos = d.find(key, search_pos);
+        if (pos == std::string::npos) return false;
+        if (pos + key.size() < d.size() && !is_pdf_delimiter(d[pos + key.size()])) {
+            search_pos = pos + key.size();
+            continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool dict_has(const std::string &d, const char *key) {
+    return dict_has(d, std::string(key));
+}
+
 static long dict_int(const std::string &dict, const std::string &key, long def = 0) {
-    size_t p = dict.find(key);
-    if (p == std::string::npos) return def;
-    p += key.size();
-    while (p < dict.size() && isspace((unsigned char)dict[p])) p++;
-    size_t start = p;
-    // Check if this is an indirect reference "N G R"
-    size_t q = start;
-    while (q < dict.size() && isdigit((unsigned char)dict[q])) q++;
-    size_t q2 = q;
-    while (q2 < dict.size() && isspace((unsigned char)dict[q2])) q2++;
-    size_t q3 = q2;
-    while (q3 < dict.size() && isdigit((unsigned char)dict[q3])) q3++;
-    size_t q4 = q3;
-    while (q4 < dict.size() && isspace((unsigned char)dict[q4])) q4++;
-    if (q4 < dict.size() && dict[q4] == 'R') return def; // indirect
-    try { return std::stol(dict.substr(start)); } catch (...) { return def; }
+    size_t search_pos = 0;
+    while (search_pos < dict.size()) {
+        size_t p = dict.find(key, search_pos);
+        if (p == std::string::npos) return def;
+        if (p + key.size() < dict.size() && !is_pdf_delimiter(dict[p + key.size()])) {
+            search_pos = p + key.size();
+            continue;
+        }
+        p += key.size();
+        while (p < dict.size() && isspace((unsigned char)dict[p])) p++;
+        size_t start = p;
+        // Check if this is an indirect reference "N G R"
+        size_t q = start;
+        while (q < dict.size() && isdigit((unsigned char)dict[q])) q++;
+        size_t q2 = q;
+        while (q2 < dict.size() && isspace((unsigned char)dict[q2])) q2++;
+        size_t q3 = q2;
+        while (q3 < dict.size() && isdigit((unsigned char)dict[q3])) q3++;
+        size_t q4 = q3;
+        while (q4 < dict.size() && isspace((unsigned char)dict[q4])) q4++;
+        if (q4 < dict.size() && dict[q4] == 'R' && (q4 + 1 >= dict.size() || is_pdf_delimiter(dict[q4 + 1]))) return def; // indirect
+        try { return std::stol(dict.substr(start)); } catch (...) { return def; }
+    }
+    return def;
 }
 
 static bool dict_direct_int(const std::string &dict, const std::string &key, long &value) {
-    size_t p = dict.find(key);
-    if (p == std::string::npos) return false;
-    p += key.size();
-    while (p < dict.size() && isspace((unsigned char)dict[p])) p++;
-    size_t start = p;
-    while (p < dict.size() && isdigit((unsigned char)dict[p])) p++;
-    if (p == start) return false;
-    size_t q = p;
-    while (q < dict.size() && isspace((unsigned char)dict[q])) q++;
-    if (q < dict.size() && isdigit((unsigned char)dict[q])) return false;
-    try {
-        value = std::stol(dict.substr(start, p - start));
-        return value >= 0;
-    } catch (...) {
-        return false;
+    size_t search_pos = 0;
+    while (search_pos < dict.size()) {
+        size_t p = dict.find(key, search_pos);
+        if (p == std::string::npos) return false;
+        if (p + key.size() < dict.size() && !is_pdf_delimiter(dict[p + key.size()])) {
+            search_pos = p + key.size();
+            continue;
+        }
+        p += key.size();
+        while (p < dict.size() && isspace((unsigned char)dict[p])) p++;
+        size_t start = p;
+        while (p < dict.size() && isdigit((unsigned char)dict[p])) p++;
+        if (p == start) return false;
+        size_t q = p;
+        while (q < dict.size() && isspace((unsigned char)dict[q])) q++;
+        if (q < dict.size() && isdigit((unsigned char)dict[q])) return false;
+        try {
+            value = std::stol(dict.substr(start, p - start));
+            return value >= 0;
+        } catch (...) {
+            return false;
+        }
     }
+    return false;
 }
 
 
@@ -340,22 +367,42 @@ static std::vector<uint8_t> flate_encode(const std::vector<uint8_t>& data) {
     return {};
 }
 
-// 1. extract_dict
+// 1. extract_dict (bounded scan up to 64KB)
 static std::string extract_dict(const std::vector<uint8_t>& raw) {
     if (raw.size() < 2) return "";
+    size_t max_scan = std::min(raw.size(), (size_t)65536);
     size_t start = 0;
-    for (size_t i = 0; i < raw.size() - 1; ++i) {
+    bool found_start = false;
+    for (size_t i = 0; i + 1 < max_scan; ++i) {
         if (raw[i] == '<' && raw[i+1] == '<') {
             start = i;
+            found_start = true;
             break;
         }
     }
-    if (start == 0 && (raw[0] != '<' || raw[1] != '<')) return "";
+    if (!found_start) return "";
 
     int depth = 0;
     size_t end = start;
-    while (end + 1 < raw.size()) {
-        if (raw[end] == '<' && raw[end+1] == '<') {
+    while (end + 1 < max_scan) {
+        if (raw[end] == '(') {
+            // PDF literal string (...) - ignore << and >> inside string literals
+            int paren_depth = 1;
+            end++;
+            while (end < max_scan && paren_depth > 0) {
+                if (raw[end] == '\\') {
+                    end += 2;
+                } else if (raw[end] == '(') {
+                    paren_depth++;
+                    end++;
+                } else if (raw[end] == ')') {
+                    paren_depth--;
+                    end++;
+                } else {
+                    end++;
+                }
+            }
+        } else if (raw[end] == '<' && raw[end+1] == '<') {
             depth++;
             end += 2;
         } else if (raw[end] == '>' && raw[end+1] == '>') {
@@ -366,34 +413,35 @@ static std::string extract_dict(const std::vector<uint8_t>& raw) {
             end++;
         }
     }
-    return std::string(raw.begin() + start, raw.end());
+    return std::string(raw.begin() + start, raw.begin() + end);
 }
 
+// Zero-copy stream extraction: avoids multi-megabyte std::string heap allocations
 static bool extract_stream(const std::vector<uint8_t>& raw, const uint8_t **sd, size_t *sl) {
-    std::string s(raw.begin(), raw.end());
-    size_t p = s.find("stream");
-    if (p == std::string::npos) return false;
-    p += 6;
-    if (p < s.size() && s[p] == '\r') p++;
-    if (p < s.size() && s[p] == '\n') p++;
+    if (raw.size() < 10) return false;
+    const uint8_t needle[] = "stream";
+    auto it = std::search(raw.begin(), raw.end(), needle, needle + 6);
+    if (it == raw.end()) return false;
+    size_t p = (size_t)(it - raw.begin()) + 6;
+    if (p < raw.size() && raw[p] == '\r') p++;
+    if (p < raw.size() && raw[p] == '\n') p++;
     
     long length = 0;
     std::string dict_str = extract_dict(raw);
-    if (dict_direct_int(dict_str, "/Length", length) && length >= 0 && p + length <= raw.size()) {
-        size_t end = p + length;
+    if (dict_direct_int(dict_str, "/Length", length) && length >= 0 && p + (size_t)length <= raw.size()) {
         *sd = raw.data() + p;
-        *sl = length;
+        *sl = (size_t)length;
         return true;
     }
 
-    size_t end = s.find("endstream", p);
-    if (end == std::string::npos) end = raw.size();
-    else {
-        if (end > p && s[end-1] == '\n') end--;
-        if (end > p && s[end-1] == '\r') end--;
-    }
+    const uint8_t end_needle[] = "endstream";
+    auto end_it = std::search(raw.begin() + p, raw.end(), end_needle, end_needle + 9);
+    size_t end = (end_it != raw.end()) ? (size_t)(end_it - raw.begin()) : raw.size();
+    if (end > p && raw[end-1] == '\n') end--;
+    if (end > p && raw[end-1] == '\r') end--;
+
     *sd = raw.data() + p;
-    *sl = end - p;
+    *sl = (end > p) ? (end - p) : 0;
     return true;
 }
 static std::vector<uint8_t> flate_decompress(const uint8_t *data, size_t len) {
@@ -479,14 +527,14 @@ static std::map<int, std::string> extract_objstm(const std::vector<uint8_t>& raw
 // 7. remove_dict_entry
 static void remove_dict_entry(std::string &dict_str, const std::string &key) {
     size_t search_pos = 0;
-    while (true) {
+    while (search_pos < dict_str.size()) {
         size_t pos = dict_str.find(key, search_pos);
         if (pos == std::string::npos) return;
         
         bool exact = true;
         if (pos + key.size() < dict_str.size()) {
             char c = dict_str[pos + key.size()];
-            if (isalnum((unsigned char)c)) exact = false;
+            if (!is_pdf_delimiter(c)) exact = false;
         }
         if (!exact) {
             search_pos = pos + key.size();
@@ -509,17 +557,24 @@ static void remove_dict_entry(std::string &dict_str, const std::string &key) {
                 else if (dict_str[end] == ']') depth--;
                 end++;
             }
-        } else if (dict_str[end] == '<' && end + 1 < dict_str.size() && dict_str[end+1] == '<') {
-            int depth = 1;
-            end += 2;
-            while (end + 1 < dict_str.size() && depth > 0) {
-                if (dict_str[end] == '<' && dict_str[end+1] == '<') { depth++; end += 2; continue; }
-                if (dict_str[end] == '>' && dict_str[end+1] == '>') { depth--; end += 2; continue; }
+        } else if (dict_str[end] == '<') {
+            if (end + 1 < dict_str.size() && dict_str[end+1] == '<') {
+                int depth = 1;
+                end += 2;
+                while (end + 1 < dict_str.size() && depth > 0) {
+                    if (dict_str[end] == '<' && dict_str[end+1] == '<') { depth++; end += 2; continue; }
+                    if (dict_str[end] == '>' && dict_str[end+1] == '>') { depth--; end += 2; continue; }
+                    end++;
+                }
+            } else {
+                // Hex string <...>
                 end++;
+                while (end < dict_str.size() && dict_str[end] != '>') end++;
+                if (end < dict_str.size() && dict_str[end] == '>') end++;
             }
         } else if (dict_str[end] == '/') {
             end++;
-            while (end < dict_str.size() && !isspace((unsigned char)dict_str[end]) && dict_str[end] != '/' && dict_str[end] != '[' && dict_str[end] != '<' && dict_str[end] != '>') end++;
+            while (end < dict_str.size() && !is_pdf_delimiter(dict_str[end])) end++;
         } else if (dict_str[end] == '(') {
             int depth = 1;
             end++;
@@ -530,7 +585,7 @@ static void remove_dict_entry(std::string &dict_str, const std::string &key) {
                 else end++;
             }
         } else {
-            while (end < dict_str.size() && !isspace((unsigned char)dict_str[end]) && dict_str[end] != '/' && dict_str[end] != '[' && dict_str[end] != '<' && dict_str[end] != '>') end++;
+            while (end < dict_str.size() && !isspace((unsigned char)dict_str[end]) && !is_pdf_delimiter(dict_str[end])) end++;
             
             size_t temp_end = end;
             while (temp_end < dict_str.size() && isspace((unsigned char)dict_str[temp_end])) temp_end++;
@@ -539,30 +594,19 @@ static void remove_dict_entry(std::string &dict_str, const std::string &key) {
             if (temp_end > gen_start) {
                 while (temp_end < dict_str.size() && isspace((unsigned char)dict_str[temp_end])) temp_end++;
                 if (temp_end < dict_str.size() && dict_str[temp_end] == 'R') {
-                    end = temp_end + 1;
+                    if (temp_end + 1 >= dict_str.size() || is_pdf_delimiter(dict_str[temp_end + 1])) {
+                        end = temp_end + 1;
+                    }
                 }
             }
         }
         
-        dict_str.erase(pos, end - pos);
-        return;
-    }
-}
-
-// 8. dict_has
-static bool dict_has(const std::string &dict_str, const std::string &key) {
-    size_t search_pos = 0;
-    while (true) {
-        size_t pos = dict_str.find(key, search_pos);
-        if (pos == std::string::npos) return false;
-        if (pos + key.size() < dict_str.size()) {
-            char c = dict_str[pos + key.size()];
-            if (isalnum((unsigned char)c)) {
-                search_pos = pos + key.size();
-                continue;
-            }
+        if (end > pos) {
+            dict_str.erase(pos, end - pos);
+            search_pos = pos;
+        } else {
+            search_pos = pos + key.size();
         }
-        return true;
     }
 }
 
@@ -571,7 +615,7 @@ static void collect_ref_ids_for_key(const std::string &dict_str, const std::stri
     while (true) {
         size_t pos = dict_str.find(key, search_pos);
         if (pos == std::string::npos) break;
-        if (pos + key.size() < dict_str.size() && isalnum((unsigned char)dict_str[pos + key.size()])) {
+        if (pos + key.size() < dict_str.size() && !is_pdf_delimiter(dict_str[pos + key.size()])) {
             search_pos = pos + key.size();
             continue;
         }
@@ -637,9 +681,9 @@ static FlatObj sanitize_raw_stream_dict(int obj_id, int gen, const std::vector<u
     size_t sl = 0;
     if (parse_stream_bounds(raw, dict_str, sd, sl)) {
         bool changed = false;
-        while (dict_has(dict_str, "/Metadata")) { remove_dict_entry(dict_str, "/Metadata"); changed = true; }
-        while (dict_has(dict_str, "/PieceInfo")) { remove_dict_entry(dict_str, "/PieceInfo"); changed = true; }
-        while (dict_has(dict_str, "/Thumb")) { remove_dict_entry(dict_str, "/Thumb"); changed = true; }
+        if (dict_has(dict_str, "/Metadata")) { remove_dict_entry(dict_str, "/Metadata"); changed = true; }
+        if (dict_has(dict_str, "/PieceInfo")) { remove_dict_entry(dict_str, "/PieceInfo"); changed = true; }
+        if (dict_has(dict_str, "/Thumb")) { remove_dict_entry(dict_str, "/Thumb"); changed = true; }
         if (changed) {
             std::string hdr = std::to_string(obj_id) + " " + std::to_string(gen) + " obj\n" + dict_str;
             if (!hdr.empty() && hdr.back() != '\n' && hdr.back() != '\r') hdr += "\n";
@@ -667,9 +711,9 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
     if (s_dropped_ids.count(obj_id) || dict_has(dict_str, "/Type /Metadata") || dict_has(dict_str, "/Type/Metadata")) {
         return fo;
     }
-    while (dict_has(dict_str, "/Metadata")) remove_dict_entry(dict_str, "/Metadata");
-    while (dict_has(dict_str, "/PieceInfo")) remove_dict_entry(dict_str, "/PieceInfo");
-    while (dict_has(dict_str, "/Thumb")) remove_dict_entry(dict_str, "/Thumb");
+    remove_dict_entry(dict_str, "/Metadata");
+    remove_dict_entry(dict_str, "/PieceInfo");
+    remove_dict_entry(dict_str, "/Thumb");
 
     const uint8_t *stream_data = nullptr;
     size_t stream_len = 0;
@@ -732,9 +776,9 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 remove_dict_entry(dict_str, "/DecodeParms");
                 remove_dict_entry(dict_str, "/Length");
                 remove_dict_entry(dict_str, "/Length1");
-                while (dict_has(dict_str, "/Metadata")) remove_dict_entry(dict_str, "/Metadata");
-                while (dict_has(dict_str, "/PieceInfo")) remove_dict_entry(dict_str, "/PieceInfo");
-                while (dict_has(dict_str, "/Thumb")) remove_dict_entry(dict_str, "/Thumb");
+                remove_dict_entry(dict_str, "/Metadata");
+                remove_dict_entry(dict_str, "/PieceInfo");
+                remove_dict_entry(dict_str, "/Thumb");
 
                 size_t dd = dict_str.rfind(">>");
                 if (dd == std::string::npos) dd = dict_str.size();
@@ -763,9 +807,9 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
             auto t_encode_end = std::chrono::high_resolution_clock::now();
             if (!compressed.empty() && compressed.size() < uncompressed.size()) {
                 remove_dict_entry(dict_str, "/Length");
-                while (dict_has(dict_str, "/Metadata")) remove_dict_entry(dict_str, "/Metadata");
-                while (dict_has(dict_str, "/PieceInfo")) remove_dict_entry(dict_str, "/PieceInfo");
-                while (dict_has(dict_str, "/Thumb")) remove_dict_entry(dict_str, "/Thumb");
+                remove_dict_entry(dict_str, "/Metadata");
+                remove_dict_entry(dict_str, "/PieceInfo");
+                remove_dict_entry(dict_str, "/Thumb");
                 size_t dd = dict_str.rfind(">>");
                 if (dd == std::string::npos) dd = dict_str.size();
                 dict_str.insert(dd, "\n/Filter /FlateDecode\n/Length " + std::to_string(compressed.size()) + "\n");
@@ -807,6 +851,15 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
         long decode_columns = dict_int(dict_str, "/Columns", -1);
         if (decode_columns > 0 && decode_columns != w) {
             w = decode_columns;
+        }
+
+        // Industry standard threshold: skip tiny icons, thin border slices, spacer lines.
+        // Recompressing images smaller than 32px or area < 4096px yields no size reduction,
+        // degrades thin lines, and wastes massive CPU time on sliced layouts.
+        bool is_smask_target = (s_smask_targets.find(obj_id) != s_smask_targets.end());
+        if (!is_smask_target && (w <= 0 || h <= 0 || w < 32 || h < 32 || (w * h < 4096))) {
+            g_image_fallback++;
+            return sanitize_raw_stream_dict(obj_id, gen, raw);
         }
 
         if (w > 0 && h > 0) {
@@ -1132,9 +1185,9 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                         remove_dict_entry(dict_str, "/BitsPerComponent");
                         remove_dict_entry(dict_str, "/Width");
                         remove_dict_entry(dict_str, "/Height");
-                        while (dict_has(dict_str, "/Metadata")) remove_dict_entry(dict_str, "/Metadata");
-                        while (dict_has(dict_str, "/PieceInfo")) remove_dict_entry(dict_str, "/PieceInfo");
-                        while (dict_has(dict_str, "/Thumb")) remove_dict_entry(dict_str, "/Thumb");
+                        remove_dict_entry(dict_str, "/Metadata");
+                        remove_dict_entry(dict_str, "/PieceInfo");
+                        remove_dict_entry(dict_str, "/Thumb");
 
                         std::string new_dict = dict_str;
                         size_t dd = new_dict.rfind(">>");
@@ -1303,7 +1356,11 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
         }
         auto raw = read_obj_raw(ctx, slots[i].offset, end_hint);
         if (!raw.empty()) {
-            std::string s_full(raw.begin(), raw.end());
+            const uint8_t needle_stm[] = "stream";
+            auto it_stm = std::search(raw.begin(), raw.end(), needle_stm, needle_stm + 6);
+            std::string s_full = (it_stm != raw.end()) 
+                ? std::string(raw.begin(), it_stm)
+                : std::string(raw.begin(), raw.end());
             collect_ref_ids_for_key(s_full, "/Metadata", s_dropped_ids);
             collect_ref_ids_for_key(s_full, "/Thumb", s_dropped_ids);
             collect_ref_ids_for_key(s_full, "/PieceInfo", s_dropped_ids);
@@ -1342,7 +1399,12 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             continue;
         }
 
-        std::string s(raw.begin(), raw.end());
+        const uint8_t needle_stm[] = "stream";
+        auto it_stm = std::search(raw.begin(), raw.end(), needle_stm, needle_stm + 6);
+        bool has_stream = (it_stm != raw.end());
+
+        // For stream objects, only convert dictionary header to string, avoiding multi-megabyte copies
+        std::string s = has_stream ? std::string(raw.begin(), it_stm) : std::string(raw.begin(), raw.end());
         if (s.find("/Type /Page") != std::string::npos || s.find("/Type/Page") != std::string::npos) {
             current_page++;
         }
@@ -1351,7 +1413,6 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             s_dropped_ids.insert(obj_id);
             continue;
         }
-        bool has_stream = s.find("stream") != std::string::npos;
         // Parse actual N G obj header from raw bytes - xref obj_id wrong for linearized PDFs
         {
             size_t p = 0;
@@ -1390,6 +1451,11 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
                 objstm_containers++;
                 auto t_e_start = std::chrono::high_resolution_clock::now();
                 auto embedded = extract_objstm(raw);
+                if (embedded.empty()) {
+                    FlatObj fo = sanitize_raw_stream_dict(obj_id, gen_n, raw);
+                    if (!fo.data.empty()) output_objs[obj_id] = std::move(fo);
+                    continue;
+                }
                 auto t_e_end = std::chrono::high_resolution_clock::now();
                 double te = std::chrono::duration<double, std::milli>(t_e_end - t_e_start).count();
                 if (te > 5.0) {
@@ -1402,9 +1468,9 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
                         s_dropped_ids.insert(eid);
                         continue;
                     }
-                    while (dict_has(ebody, "/Metadata")) remove_dict_entry(ebody, "/Metadata");
-                    while (dict_has(ebody, "/PieceInfo")) remove_dict_entry(ebody, "/PieceInfo");
-                    while (dict_has(ebody, "/Thumb")) remove_dict_entry(ebody, "/Thumb");
+                    remove_dict_entry(ebody, "/Metadata");
+                    remove_dict_entry(ebody, "/PieceInfo");
+                    remove_dict_entry(ebody, "/Thumb");
                     if (ebody.find("/Type /Page") != std::string::npos || ebody.find("/Type/Page") != std::string::npos) {
                         current_page++;
                     }
@@ -1454,9 +1520,9 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             if (s_dropped_ids.count(obj_id) || dict_has(s, "/Type /Metadata") || dict_has(s, "/Type/Metadata")) {
                 continue;
             }
-            while (dict_has(s, "/Metadata")) remove_dict_entry(s, "/Metadata");
-            while (dict_has(s, "/PieceInfo")) remove_dict_entry(s, "/PieceInfo");
-            while (dict_has(s, "/Thumb")) remove_dict_entry(s, "/Thumb");
+            remove_dict_entry(s, "/Metadata");
+            remove_dict_entry(s, "/PieceInfo");
+            remove_dict_entry(s, "/Thumb");
             auto t_o_start = std::chrono::high_resolution_clock::now();
             FlatObj fo;
             fo.id  = obj_id;
@@ -1513,6 +1579,7 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
         g_skip_mask, g_skip_color, g_skip_decode, g_skip_filter);
     printf("writer: font subsets: %d\n", g_font_subset);
     printf("writer: total output objects: %zu\n", output_objs.size());
+    fflush(stdout);
 
     FILE *out = fopen(out_path, "wb");
     if (!out) {
@@ -1525,10 +1592,6 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
 
     int max_id = 0;
     for (auto &kv : output_objs) if (kv.first > max_id) max_id = kv.first;
-
-    // -------------------------------------------------------------
-    // Item 5: Deduplication of identical stream objects (Form XObjects, Images)
-    // -------------------------------------------------------------
     std::unordered_map<int, int> dedup_map; // dup_id -> master_id
     {
         struct StreamFingerprint {
@@ -1537,31 +1600,41 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             std::string dict_sig;
             int master_id;
         };
-        std::vector<StreamFingerprint> fingerprints;
+        std::unordered_map<uint64_t, std::vector<StreamFingerprint>> fp_map;
+
+        printf("writer: starting deduplication scan on %zu objects...\n", output_objs.size());
+        fflush(stdout);
 
         for (auto &kv : output_objs) {
             FlatObj &fo = kv.second;
             if (fo.data.empty() || fo.id <= 0) continue;
-            std::string s_hdr(fo.data.begin(), fo.data.begin() + std::min((size_t)1024, fo.data.size()));
-            if (s_hdr.find("stream") == std::string::npos) continue;
+            
+            const uint8_t stm_needle[] = "stream";
+            if (std::search(fo.data.begin(), fo.data.begin() + std::min((size_t)2048, fo.data.size()), stm_needle, stm_needle + 6) == fo.data.begin() + std::min((size_t)2048, fo.data.size())) {
+                continue;
+            }
 
             const uint8_t *sd = nullptr; size_t sl = 0;
-            if (!extract_stream(fo.data, &sd, &sl) || sl < 32) continue;
+            if (!extract_stream(fo.data, &sd, &sl) || sl < 64) continue;
 
             uint32_t crc = (uint32_t)mz_crc32(0, sd, sl);
+            uint64_t fp_key = ((uint64_t)crc << 32) | (uint64_t)(sl & 0xFFFFFFFF);
 
             std::string dict_str = extract_dict(fo.data);
-            while (dict_has(dict_str, "/Length")) remove_dict_entry(dict_str, "/Length");
-            while (dict_has(dict_str, "/Metadata")) remove_dict_entry(dict_str, "/Metadata");
+            remove_dict_entry(dict_str, "/Length");
+            remove_dict_entry(dict_str, "/Metadata");
 
             int match_master = -1;
-            for (auto &fp : fingerprints) {
-                if (fp.stream_len == sl && fp.crc == crc && fp.dict_sig == dict_str) {
-                    FlatObj &master_fo = output_objs[fp.master_id];
-                    const uint8_t *msd = nullptr; size_t msl = 0;
-                    if (extract_stream(master_fo.data, &msd, &msl) && msl == sl && memcmp(msd, sd, sl) == 0) {
-                        match_master = fp.master_id;
-                        break;
+            auto it = fp_map.find(fp_key);
+            if (it != fp_map.end()) {
+                for (auto &fp : it->second) {
+                    if (fp.stream_len == sl && fp.crc == crc && fp.dict_sig == dict_str) {
+                        FlatObj &master_fo = output_objs[fp.master_id];
+                        const uint8_t *msd = nullptr; size_t msl = 0;
+                        if (extract_stream(master_fo.data, &msd, &msl) && msl == sl && memcmp(msd, sd, sl) == 0) {
+                            match_master = fp.master_id;
+                            break;
+                        }
                     }
                 }
             }
@@ -1569,45 +1642,56 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             if (match_master > 0) {
                 dedup_map[fo.id] = match_master;
             } else {
-                fingerprints.push_back({ sl, crc, dict_str, fo.id });
+                fp_map[fp_key].push_back({ sl, crc, dict_str, fo.id });
             }
         }
 
+        printf("writer: deduplication scan finished, found %zu duplicate stream objects\n", dedup_map.size());
+        fflush(stdout);
+
         if (!dedup_map.empty()) {
-            printf("writer: deduplication found %zu duplicate stream objects\n", dedup_map.size());
             for (auto &kv : output_objs) {
                 FlatObj &fo = kv.second;
                 if (fo.data.empty()) continue;
 
-                std::string s_data(fo.data.begin(), fo.data.end());
-                size_t stm_pos = s_data.find("stream");
-                size_t dict_end = (stm_pos != std::string::npos) ? stm_pos : fo.data.size();
+                const uint8_t needle[] = "stream";
+                auto stm_it = std::search(fo.data.begin(), fo.data.end(), needle, needle + 6);
+                size_t dict_end = (stm_it != fo.data.end()) ? (size_t)(stm_it - fo.data.begin()) : fo.data.size();
 
                 std::string dict_part(fo.data.begin(), fo.data.begin() + dict_end);
                 bool modified = false;
 
-                for (auto &dp : dedup_map) {
-                    int dup_id = dp.first;
-                    int master_id = dp.second;
-                    std::string target = std::to_string(dup_id) + " 0 R";
-                    std::string repl   = std::to_string(master_id) + " 0 R";
-
-                    size_t p = 0;
-                    while ((p = dict_part.find(target, p)) != std::string::npos) {
-                        if (p > 0 && isdigit((unsigned char)dict_part[p - 1])) {
-                            p += target.size();
-                            continue;
+                // Single pass scan through dict_part for " 0 R"
+                size_t pos = 0;
+                while ((pos = dict_part.find(" 0 R", pos)) != std::string::npos) {
+                    if (pos > 0 && isdigit((unsigned char)dict_part[pos - 1])) {
+                        size_t num_end = pos;
+                        size_t num_start = pos - 1;
+                        while (num_start > 0 && isdigit((unsigned char)dict_part[num_start - 1])) {
+                            num_start--;
                         }
-                        dict_part.replace(p, target.size(), repl);
-                        p += repl.size();
-                        modified = true;
+                        char prev_ch = (num_start > 0) ? dict_part[num_start - 1] : ' ';
+                        if (prev_ch == ' ' || prev_ch == '\n' || prev_ch == '\r' || prev_ch == '\t' ||
+                            prev_ch == '[' || prev_ch == '/' || prev_ch == '<') {
+                            std::string id_str = dict_part.substr(num_start, num_end - num_start);
+                            int ref_id = safe_stoi(id_str);
+                            auto dit = dedup_map.find(ref_id);
+                            if (dit != dedup_map.end()) {
+                                std::string repl_num = std::to_string(dit->second);
+                                dict_part.replace(num_start, num_end - num_start, repl_num);
+                                pos = num_start + repl_num.size() + 4;
+                                modified = true;
+                                continue;
+                            }
+                        }
                     }
+                    pos += 4;
                 }
 
                 if (modified) {
                     std::vector<uint8_t> new_data(dict_part.begin(), dict_part.end());
-                    if (stm_pos != std::string::npos) {
-                        new_data.insert(new_data.end(), fo.data.begin() + stm_pos, fo.data.end());
+                    if (stm_it != fo.data.end()) {
+                        new_data.insert(new_data.end(), stm_it, fo.data.end());
                     }
                     fo.data = std::move(new_data);
                 }
@@ -1634,10 +1718,7 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
     }
 
     bool use_stream = (!st->writer || !st->writer->traditional_xref);
-
-    // -------------------------------------------------------------
-    // Item 2: Pack non-stream objects into /Type /ObjStm containers
-    // -------------------------------------------------------------
+    
     struct PackedObjRef {
         int objstm_id;
         int index;
@@ -1653,8 +1734,10 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             if (fo.data.empty() || oid <= 0) continue;
             if (oid == root_obj || fo.gen != 0) continue;
 
+            const uint8_t needle_stm[] = "stream";
+            if (std::search(fo.data.begin(), fo.data.end(), needle_stm, needle_stm + 6) != fo.data.end()) continue;
+
             std::string s_obj(fo.data.begin(), fo.data.end());
-            if (s_obj.find("stream") != std::string::npos) continue;
             if (s_obj.find("/Linearized") != std::string::npos ||
                 s_obj.find("/Encrypt") != std::string::npos) continue;
 
@@ -2142,4 +2225,4 @@ static std::string resolve_image_colorspace(pt_context *ctx, pt_state *st,
     if (end_pos != std::string::npos) s = s.substr(0, end_pos);
     s_cs_cache[object_id] = s;
     return s;
-}
+}

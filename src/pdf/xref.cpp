@@ -74,26 +74,96 @@ static void parse_root_from_dict(pt_state *st, const std::string &dict) {
     }
 }
 
-// Detect whether the xref at `offset` is a traditional XRef table or an XRef stream
-static int detect_xref_type_at(pt_context *ctx, long offset) {
+static bool is_valid_xref_buffer(const char *buf, size_t n, int &out_type, size_t &out_match_pos) {
+    for (size_t i = 0; i + 4 <= n; i++) {
+        if (strncmp(buf + i, "xref", 4) == 0) {
+            bool pre_ok = (i == 0) || isspace((unsigned char)buf[i - 1]);
+            bool post_ok = (i + 4 == n) || isspace((unsigned char)buf[i + 4]);
+            if (pre_ok && post_ok) {
+                out_type = PT_DOC_TABLE;
+                out_match_pos = i;
+                return true;
+            }
+        }
+    }
+    // Check for "N G obj" where N and G are numbers
+    for (size_t i = 0; i + 5 <= n; i++) {
+        if (isdigit((unsigned char)buf[i])) {
+            char *end = nullptr;
+            long num1 = strtol(buf + i, &end, 10);
+            if (end && end != buf + i && num1 >= 0) {
+                while (*end && isspace((unsigned char)*end)) end++;
+                long num2 = strtol(end, &end, 10);
+                (void)num2;
+                while (*end && isspace((unsigned char)*end)) end++;
+                if (strncmp(end, "obj", 3) == 0) {
+                    char post = end[3];
+                    if (post == 0 || isspace((unsigned char)post) || post == '<' || post == '/') {
+                        out_type = PT_DOC_STREAM;
+                        out_match_pos = i;
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// Detect whether the xref at `offset` is a traditional XRef table or an XRef stream,
+// with automatic window scanning tolerance for slightly misaligned offsets.
+static int detect_xref_type_at(pt_context *ctx, long &offset) {
     if (offset <= 0) return PT_DOC_INVALID;
     if (ctx->file->seek(ctx, ctx->file->f, offset, PT_SEEK_SET) != 0) return PT_DOC_INVALID;
 
     char buf[128] = {0};
     size_t n = ctx->file->read(ctx, buf, 1, 127, ctx->file->f);
-    if (n == 0) return PT_DOC_INVALID;
-
-    size_t p = 0;
-    while (p < n && isspace((unsigned char)buf[p])) p++;
-    if (p >= n) return PT_DOC_INVALID;
-
-    if (strncmp(buf + p, "xref", 4) == 0) {
-        char next = buf[p + 4];
-        if (next == 0 || isspace((unsigned char)next)) {
-            return PT_DOC_TABLE;
+    if (n > 0) {
+        size_t p = 0;
+        while (p < n && isspace((unsigned char)buf[p])) p++;
+        if (p < n) {
+            if (strncmp(buf + p, "xref", 4) == 0) {
+                char next = buf[p + 4];
+                if (next == 0 || isspace((unsigned char)next)) {
+                    offset += (long)p;
+                    return PT_DOC_TABLE;
+                }
+            }
+            char *end = nullptr;
+            long obj_num = strtol(buf + p, &end, 10);
+            if (end && end != buf + p && obj_num >= 0) {
+                while (*end && isspace((unsigned char)*end)) end++;
+                strtol(end, &end, 10);
+                while (*end && isspace((unsigned char)*end)) end++;
+                if (strncmp(end, "obj", 3) == 0) {
+                    offset += (long)p;
+                    return PT_DOC_STREAM;
+                }
+            }
         }
     }
-    return PT_DOC_STREAM;
+
+    // Offset misalignment recovery: scan a +/- 4096-byte window around offset
+    ctx->file->seek(ctx, ctx->file->f, 0, PT_SEEK_END);
+    long file_size = ctx->file->tell(ctx, ctx->file->f);
+    long window_start = std::max(0L, offset - 4096L);
+    long window_end = std::min(file_size, offset + 4096L);
+    size_t window_len = (size_t)(window_end - window_start);
+
+    if (window_len > 0 && ctx->file->seek(ctx, ctx->file->f, window_start, PT_SEEK_SET) == 0) {
+        std::vector<char> win_buf(window_len + 1, 0);
+        size_t r = ctx->file->read(ctx, win_buf.data(), 1, window_len, ctx->file->f);
+        if (r > 0) {
+            int recovered_type = PT_DOC_INVALID;
+            size_t match_pos = 0;
+            if (is_valid_xref_buffer(win_buf.data(), r, recovered_type, match_pos)) {
+                offset = window_start + (long)match_pos;
+                return recovered_type;
+            }
+        }
+    }
+
+    return PT_DOC_INVALID;
 }
 
 // Public API for checking type
@@ -594,10 +664,10 @@ int dictionary_xref(pt_context *ctx, pt_state *st) {
 
     st->xref->total_entries = (int)st->xref->xref_store.size();
 
-    if (initial_doc_type == PT_DOC_TABLE || initial_doc_type == PT_DOC_STREAM) {
+    if (!st->xref->xref_store.empty() && (initial_doc_type == PT_DOC_TABLE || initial_doc_type == PT_DOC_STREAM)) {
         return ctx->doc = (pt_doc)initial_doc_type;
     }
-    return ctx->doc = PT_DOC_TABLE;
+    return ctx->doc = PT_DOC_INVALID;
 }
 
 // Parse trailer dictionary to extract /Root object
