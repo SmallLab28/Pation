@@ -2242,84 +2242,118 @@ static std::vector<uint8_t> parse_palette(pt_context *ctx, pt_state *st, int cs_
     size_t end_bracket = s.find("]", idx);
     if (end_bracket == std::string::npos) end_bracket = s.size();
     
+    // Check for palette data formats in /Indexed [ base hival lookup ]
+    // Lookup can be:
+    // 1) Hex string: <...>
+    // 2) Literal string: (...)
+    // 3) Indirect reference to a stream: N G R (where this reference appears AFTER hival)
+    
+    // Find the tokens after /Indexed
+    // /Indexed <base> <hival> <lookup>
+    // Note: <base> can itself be an indirect reference like "6608 0 R"
+    // So any "N G R" before hival is the base ColorSpace, NOT the lookup table!
+    
     size_t hex_start = s.find("<", idx);
     size_t lit_start = s.find("(", idx);
-    size_t ref_pos = s.find(" R", idx);
     
-    bool is_hex = (hex_start != std::string::npos && hex_start < end_bracket);
-    bool is_lit = (lit_start != std::string::npos && lit_start < end_bracket);
-    bool is_ref = (ref_pos != std::string::npos && ref_pos < end_bracket);
+    // Find hival: the integer before lookup
+    // If lookup is a string, hex_start or lit_start marks the lookup.
+    bool lookup_is_hex = (hex_start != std::string::npos && hex_start < end_bracket);
+    bool lookup_is_lit = (lit_start != std::string::npos && lit_start < end_bracket);
     
-    if (is_hex && (!is_lit || hex_start < lit_start) && (!is_ref || hex_start < ref_pos)) {
+    // Check if there is an indirect reference that appears as the lookup table (after hival)
+    bool lookup_is_ref = false;
+    int lookup_ref_id = -1;
+    
+    if (!lookup_is_hex && !lookup_is_lit) {
+        // Find last " R" before end_bracket
+        size_t last_r = s.rfind(" R", end_bracket);
+        if (last_r != std::string::npos && last_r > idx) {
+            size_t p = last_r;
+            while (p > idx && isspace((unsigned char)s[p - 1])) p--;
+            while (p > idx && isdigit((unsigned char)s[p - 1])) p--;
+            if (p > idx && s[p - 1] == ' ') {
+                p--;
+                while (p > idx && isdigit((unsigned char)s[p - 1])) p--;
+                lookup_ref_id = safe_stoi(s.substr(p));
+                if (lookup_ref_id > 0) {
+                    lookup_is_ref = true;
+                }
+            }
+        }
+    } else if (lookup_is_hex && lookup_is_lit) {
+        if (hex_start < lit_start) lookup_is_lit = false;
+        else lookup_is_hex = false;
+    }
+
+    if (lookup_is_hex) {
         size_t hex_end = s.find(">", hex_start);
         if (hex_end != std::string::npos) {
-            std::string hex = s.substr(hex_start+1, hex_end - hex_start - 1);
-            for (size_t i=0; i<hex.size(); i+=2) {
-                while(i < hex.size() && isspace(hex[i])) i++;
-                if (i+1 < hex.size()) {
+            std::string hex = s.substr(hex_start + 1, hex_end - hex_start - 1);
+            for (size_t i = 0; i < hex.size(); i += 2) {
+                while (i < hex.size() && isspace((unsigned char)hex[i])) i++;
+                if (i + 1 < hex.size()) {
                     std::string byte_str = hex.substr(i, 2);
                     pal.push_back((uint8_t)strtol(byte_str.c_str(), nullptr, 16));
                 }
             }
         }
-    } else if (is_lit && (!is_ref || lit_start < ref_pos)) {
+    } else if (lookup_is_lit) {
         size_t p = lit_start + 1;
-        while(p < end_bracket && s[p] != ')') {
+        int paren_depth = 1;
+        while (p < s.size() && paren_depth > 0) {
             if (s[p] == '\\') {
                 p++;
-                if (p < end_bracket && isdigit(s[p])) {
+                if (p < s.size() && s[p] >= '0' && s[p] <= '7') {
                     int val = 0;
-                    for (int k=0; k<3 && p < end_bracket && isdigit(s[p]); k++, p++) {
+                    for (int k = 0; k < 3 && p < s.size() && s[p] >= '0' && s[p] <= '7'; k++, p++) {
                         val = val * 8 + (s[p] - '0');
                     }
                     pal.push_back((uint8_t)val);
-                    continue;
-                } else if (p < end_bracket) {
-                    if (s[p] == 'n') pal.push_back('\n');
-                    else if (s[p] == 'r') pal.push_back('\r');
-                    else if (s[p] == 't') pal.push_back('\t');
-                    else if (s[p] == 'b') pal.push_back('\b');
-                    else if (s[p] == 'f') pal.push_back('\f');
-                    else if (s[p] == '(') pal.push_back('(');
-                    else if (s[p] == ')') pal.push_back(')');
-                    else if (s[p] == '\\') pal.push_back('\\');
+                } else if (p < s.size()) {
+                    char c = s[p];
+                    if (c == 'n') pal.push_back('\n');
+                    else if (c == 'r') pal.push_back('\r');
+                    else if (c == 't') pal.push_back('\t');
+                    else if (c == 'b') pal.push_back('\b');
+                    else if (c == 'f') pal.push_back('\f');
+                    else if (c == '(') pal.push_back('(');
+                    else if (c == ')') pal.push_back(')');
+                    else if (c == '\\') pal.push_back('\\');
                     p++;
-                    continue;
                 }
+            } else if (s[p] == '(') {
+                paren_depth++;
+                pal.push_back('(');
+                p++;
+            } else if (s[p] == ')') {
+                paren_depth--;
+                if (paren_depth == 0) break;
+                pal.push_back(')');
+                p++;
             } else {
                 pal.push_back((uint8_t)s[p]);
                 p++;
             }
         }
-    } else if (is_ref) {
-        int ref_id = -1;
-        size_t p = ref_pos;
-        while(p > idx && isspace(s[p-1])) p--;
-        while(p > idx && isdigit(s[p-1])) p--;
-        if (s[p-1] == ' ' && isdigit(s[p-2])) {
-            p--;
-            while(p > idx && isdigit(s[p-1])) p--;
-            ref_id = safe_stoi(s.substr(p));
-        }
-        if (ref_id > 0) {
-            long ref_offset = st->xref->look(ctx, st, ref_id);
-            if (ref_offset > 0) {
-                ctx->file->seek(ctx, ctx->file->f, ref_offset, PT_SEEK_SET);
-                std::vector<char> ref_buf(65536, 0);
-                size_t rn = ctx->file->read(ctx, ref_buf.data(), 1, 65535, ctx->file->f);
-                std::string rs(ref_buf.data(), rn);
-                size_t stream_pos = rs.find("stream");
-                size_t endstream_pos = rs.find("endstream");
-                if (stream_pos != std::string::npos && endstream_pos != std::string::npos) {
-                    stream_pos += 6;
-                    while(stream_pos < rs.size() && (rs[stream_pos] == '\r' || rs[stream_pos] == '\n')) stream_pos++;
-                    const unsigned char *src = (const unsigned char*)rs.data() + stream_pos;
-                    size_t src_len = endstream_pos - stream_pos;
-                    if (rs.find("FlateDecode") != std::string::npos) {
-                        pal = flate_decompress(src, src_len);
-                    } else {
-                        pal.assign(src, src + src_len);
-                    }
+    } else if (lookup_is_ref && lookup_ref_id > 0) {
+        long ref_offset = st->xref->look(ctx, st, lookup_ref_id);
+        if (ref_offset > 0) {
+            ctx->file->seek(ctx, ctx->file->f, ref_offset, PT_SEEK_SET);
+            std::vector<char> ref_buf(65536, 0);
+            size_t rn = ctx->file->read(ctx, ref_buf.data(), 1, 65535, ctx->file->f);
+            std::string rs(ref_buf.data(), rn);
+            size_t stream_pos = rs.find("stream");
+            size_t endstream_pos = rs.find("endstream");
+            if (stream_pos != std::string::npos && endstream_pos != std::string::npos) {
+                stream_pos += 6;
+                while (stream_pos < rs.size() && (rs[stream_pos] == '\r' || rs[stream_pos] == '\n')) stream_pos++;
+                const unsigned char *src = (const unsigned char*)rs.data() + stream_pos;
+                size_t src_len = (endstream_pos > stream_pos) ? endstream_pos - stream_pos : 0;
+                if (rs.find("FlateDecode") != std::string::npos) {
+                    pal = flate_decompress(src, src_len);
+                } else {
+                    pal.assign(src, src + src_len);
                 }
             }
         }
