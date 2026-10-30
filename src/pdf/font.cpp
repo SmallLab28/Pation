@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
 static inline uint16_t be16(const uint8_t *p) {
     return (uint16_t)((p[0] << 8) | p[1]);
@@ -169,6 +170,9 @@ void pt_cmap_mark(const pt_font *font, pt_glyph_set *gs,
 }
 
 static uint32_t loca_offset(const pt_font *font, uint16_t gid) {
+    if (!font || !font->off_loca) return 0;
+    size_t step = (font->index_to_loc_format == 0) ? 2 : 4;
+    if (font->off_loca + (size_t)(gid + 1) * step > font->size) return 0;
     if (font->index_to_loc_format == 0)
         return (uint32_t)be16(font->data + font->off_loca + gid * 2) * 2;
     return be32(font->data + font->off_loca + gid * 4);
@@ -200,14 +204,29 @@ void pt_glyf_closure(const pt_font *font, pt_glyph_set *gs) {
             if (n_contours >= 0) continue;
 
             const uint8_t *p = g + 10;
+            const uint8_t *p_end = g + len;
             uint16_t flags;
             do {
+                if (p + 4 > p_end) break;
                 flags = be16(p); p += 2;
                 uint16_t comp_gid = be16(p); p += 2;
-                if (flags & ARG_1_AND_2_ARE_WORDS) p += 4; else p += 2;
-                if (flags & WE_HAVE_A_SCALE)              p += 2;
-                else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) p += 4;
-                else if (flags & WE_HAVE_A_TWO_BY_TWO)    p += 8;
+                if (flags & ARG_1_AND_2_ARE_WORDS) {
+                    if (p + 4 > p_end) break;
+                    p += 4;
+                } else {
+                    if (p + 2 > p_end) break;
+                    p += 2;
+                }
+                if (flags & WE_HAVE_A_SCALE) {
+                    if (p + 2 > p_end) break;
+                    p += 2;
+                } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
+                    if (p + 4 > p_end) break;
+                    p += 4;
+                } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
+                    if (p + 8 > p_end) break;
+                    p += 8;
+                }
 
                 if (comp_gid < gs->cap && !gs->used[comp_gid]) {
                     gs->used[comp_gid] = true;
@@ -247,6 +266,16 @@ static void buf_append(Buf *b, const void *p, size_t n) {
 }
 static void buf_pad4(Buf *b) {
     while (b->len & 3) { buf_ensure(b, 1); b->data[b->len++] = 0; }
+}
+
+static inline bool is_unneeded_table(uint32_t tag) {
+    return tag == PT_TAG('h','d','m','x') ||
+           tag == PT_TAG('D','S','I','G') ||
+           tag == PT_TAG('V','D','M','X') ||
+           tag == PT_TAG('L','T','S','H') ||
+           tag == PT_TAG('m','e','t','a') ||
+           tag == PT_TAG('g','a','s','p') ||
+           tag == PT_TAG('P','C','L','T');
 }
 
 uint8_t *pt_font_subset(const pt_font *font,
@@ -304,40 +333,39 @@ uint8_t *pt_font_subset(const pt_font *font,
         Buf *dyn;
     } TableSlot;
 
-    TableSlot slots[16];
-    int nslots = 0;
+    std::vector<TableSlot> slots;
+    slots.reserve(font->num_tables);
 
-    for (int i = 0; i < font->num_tables && nslots < 16; i++) {
+    for (int i = 0; i < font->num_tables; i++) {
         uint32_t tag = font->tables[i].tag;
+        if (is_unneeded_table(tag)) continue;
         uint32_t off = font->tables[i].offset;
         uint32_t len = font->tables[i].length;
 
+        TableSlot slot = {};
+        slot.tag = tag;
         if (tag == PT_TAG_glyf) {
-            slots[nslots].tag = tag;
-            slots[nslots].src = NULL;
-            slots[nslots].src_len = 0;
-            slots[nslots].dyn = &glyf_buf;
-            nslots++;
+            slot.dyn = &glyf_buf;
+            slots.push_back(slot);
         } else if (tag == PT_TAG_loca) {
-            slots[nslots].tag = tag;
-            slots[nslots].src = NULL;
-            slots[nslots].src_len = 0;
-            slots[nslots].dyn = &loca_buf;
-            nslots++;
+            slot.dyn = &loca_buf;
+            slots.push_back(slot);
         } else if (tag == PT_TAG_head) {
-            slots[nslots].tag = tag;
-            slots[nslots].src = NULL;
-            slots[nslots].src_len = 0;
-            slots[nslots].dyn = &head_copy;
-            nslots++;
+            slot.dyn = &head_copy;
+            slots.push_back(slot);
         } else if (off + len <= font->size) {
-            slots[nslots].tag = tag;
-            slots[nslots].src = font->data + off;
-            slots[nslots].src_len = len;
-            slots[nslots].dyn = NULL;
-            nslots++;
+            slot.src = font->data + off;
+            slot.src_len = len;
+            slots.push_back(slot);
         }
     }
+
+    // OpenType spec: Table directory must be sorted ascending by tag
+    std::sort(slots.begin(), slots.end(), [](const TableSlot &a, const TableSlot &b) {
+        return a.tag < b.tag;
+    });
+
+    int nslots = (int)slots.size();
 
     size_t dir_size = 12 + nslots * 16;
     uint32_t running = (uint32_t)dir_size;

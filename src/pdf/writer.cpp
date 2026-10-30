@@ -806,7 +806,30 @@ FlatObj process_stream_obj(pt_context *ctx, pt_state *st, int obj_id, int gen, c
                 pt_glyph_set_free(&glyphs);
             }
 
+            bool is_valid_subset = false;
             if (subset && subset_size > 0 && subset_size < font_bytes.size()) {
+                if (is_truetype) {
+                    pt_font chk = {};
+                    if (pt_font_open(&chk, subset, subset_size) == 0) {
+                        if (chk.off_head && chk.off_hhea && chk.off_maxp &&
+                            chk.off_loca && chk.off_glyf && chk.off_hmtx) {
+                            is_valid_subset = true;
+                        }
+                        pt_font_close(&chk);
+                    }
+                } else if (is_cff) {
+                    if (subset_size >= 16) {
+                        is_valid_subset = true;
+                    }
+                }
+            }
+
+            if (!is_valid_subset && subset) {
+                std::free(subset);
+                subset = NULL;
+            }
+
+            if (is_valid_subset) {
                 std::vector<uint8_t> uncompressed(subset, subset + subset_size);
                 std::free(subset);
                 std::vector<uint8_t> compressed = flate_encode(uncompressed);
@@ -1495,7 +1518,7 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             collect_ref_ids_for_key(s_full, "/Metadata", s_dropped_ids);
             collect_ref_ids_for_key(s_full, "/Thumb", s_dropped_ids);
             collect_ref_ids_for_key(s_full, "/PieceInfo", s_dropped_ids);
-            collect_tounicode_codepoints(raw);
+            // Only collect codepoints actually rendered on pages, do not bloat with full ToUnicode CMap
             collect_used_codes_from_content(raw);
         }
     }
