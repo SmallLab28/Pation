@@ -3,6 +3,7 @@
 #include <windows.h>
 #endif
 #include <chrono>
+#include <ctime>
 #include "pdf/writer.h"
 #include "pdf/page.h"
 #include "pdf/xref.h"
@@ -1338,6 +1339,26 @@ static void remove_unreachable_objects(std::map<int, FlatObj> &output_objs, int 
            output_objs.size(), removed_count, (double)removed_bytes / (1024.0 * 1024.0));
 }
 
+static std::string pt_get_pdf_timestamp() {
+    time_t rawtime;
+    time(&rawtime);
+    struct tm ti;
+#ifdef _WIN32
+    if (localtime_s(&ti, &rawtime) != 0) {
+        return "D:20261030200000+07'00'";
+    }
+#else
+    if (!localtime_r(&rawtime, &ti)) {
+        return "D:20261030200000+07'00'";
+    }
+#endif
+    char buf[64];
+    if (strftime(buf, sizeof(buf), "D:%Y%m%d%H%M%S+07'00'", &ti) == 0) {
+        return "D:20261030200000+07'00'";
+    }
+    return std::string(buf);
+}
+
 int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
     if (!st->xref || st->xref->xref_store.empty()) return -1;
 
@@ -1829,6 +1850,24 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
 
     remove_unreachable_objects(output_objs, root_obj);
 
+    // --- Pation Info Dictionary (Anti-circumvention / AGPLv3 Metadata & Signature) ---
+    int info_obj_id = ++max_id;
+    std::string pdf_date = pt_get_pdf_timestamp();
+    std::string info_body = 
+        "<<\n"
+        "/Producer (Pation PDF Engine - SmallLab28)\n"
+        "/Creator (Pation Core)\n"
+        "/EngineSignature (Licensed to Pation / SmallLab28)\n"
+        "/CreationDate (" + pdf_date + ")\n"
+        "/ModDate (" + pdf_date + ")\n"
+        ">>";
+    std::string info_full = std::to_string(info_obj_id) + " 0 obj\n" + info_body + "\nendobj\n";
+    FlatObj info_fo;
+    info_fo.id = info_obj_id;
+    info_fo.gen = 0;
+    info_fo.data.assign(info_full.begin(), info_full.end());
+    output_objs[info_obj_id] = std::move(info_fo);
+
     bool use_stream = (!st->writer || !st->writer->traditional_xref);
     
     struct PackedObjRef {
@@ -1844,7 +1883,7 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
             int oid = kv.first;
             FlatObj &fo = kv.second;
             if (fo.data.empty() || oid <= 0) continue;
-            if (oid == root_obj || fo.gen != 0) continue;
+            if (oid == root_obj || oid == info_obj_id || fo.gen != 0) continue;
 
             const uint8_t needle_stm[] = "stream";
             if (std::search(fo.data.begin(), fo.data.end(), needle_stm, needle_stm + 6) != fo.data.end()) continue;
@@ -2011,6 +2050,9 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
         if (root_obj > 0) {
             stream_hdr += "/Root " + std::to_string(root_obj) + " " + std::to_string(root_gen) + " R";
         }
+        if (info_obj_id > 0) {
+            stream_hdr += "/Info " + std::to_string(info_obj_id) + " 0 R";
+        }
 
         if (!xref_comp.empty()) {
             stream_hdr += "/Filter/FlateDecode/Length " + std::to_string(xref_comp.size()) + ">>stream\n";
@@ -2055,9 +2097,15 @@ int rewrite_pdf_impl(pt_context *ctx, pt_state *st, const char *out_path) {
                 fprintf(out, "0000000000 00000 f \n");
         }
 
-        if (root_obj > 0)
-            fprintf(out, "trailer\n<</Size %d/Root %d %d R>>\nstartxref\n%ld\n%%%%EOF\n",
-                    total_size, root_obj, root_gen, xref_start);
+        if (root_obj > 0) {
+            if (info_obj_id > 0) {
+                fprintf(out, "trailer\n<</Size %d/Root %d %d R/Info %d 0 R>>\nstartxref\n%ld\n%%%%EOF\n",
+                        total_size, root_obj, root_gen, info_obj_id, xref_start);
+            } else {
+                fprintf(out, "trailer\n<</Size %d/Root %d %d R>>\nstartxref\n%ld\n%%%%EOF\n",
+                        total_size, root_obj, root_gen, xref_start);
+            }
+        }
     }
     fclose(out);
 
